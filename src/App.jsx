@@ -24,7 +24,9 @@ export default function App() {
   const [loadingMessage, setLoadingMessage] = useState('Procesando archivo...');
   const [errorMessage, setErrorMessage] = useState('');
   
-  const fileInputRef = useRef(null);
+  // Refs independientes para forzar el comportamiento nativo de captura de foto y video
+  const photoInputRef = useRef(null);
+  const videoInputRef = useRef(null);
 
   // Mensajes de carga dinámicos para mejorar la experiencia de usuario
   const loadingMessages = [
@@ -85,12 +87,6 @@ export default function App() {
       setStatus('preview');
     };
     reader.readAsDataURL(file);
-  };
-
-  const triggerFileInput = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
   };
 
   // Función para optimizar y redimensionar la imagen en el cliente
@@ -248,6 +244,11 @@ export default function App() {
     setImagePreview(null);
     setOriginalFile(null);
     setErrorMessage('');
+    
+    // Limpiar los inputs para permitir subir la misma foto/video seguidos si se desea
+    if (photoInputRef.current) photoInputRef.current.value = "";
+    if (videoInputRef.current) videoInputRef.current.value = "";
+    
     setStatus('idle');
   };
 
@@ -278,30 +279,39 @@ export default function App() {
           </p>
         </header>
 
-        {/* --- ESTADO: IDLE (Pantalla de Bienvenida) --- */}
+        {/* --- ESTADO: IDLE (Pantalla de Bienvenida con Doble Botón) --- */}
         {status === 'idle' && (
           <section className="flex-1 flex flex-col justify-between" id="section-idle">
             <div className="flex flex-col items-center text-center my-6 py-6 px-4 rounded-2xl bg-dark-800/40 border border-white/5 relative group">
               <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-festive-pink to-festive-purple flex items-center justify-center shadow-lg shadow-festive-pink/20 animate-float mb-4">
                 <Camera className="w-10 h-10 text-white" />
               </div>
-              <h2 className="text-lg font-bold text-white mb-2">¡Sube tus fotos o videos!</h2>
+              <h2 className="text-lg font-bold text-white mb-2">¡Sube tus recuerdos a la fiesta!</h2>
               <p className="text-xs text-slate-400 max-w-[280px]">
-                Presiona el botón para abrir la cámara de tu móvil, capturar una foto, grabar un video corto o seleccionarlo desde tu galería.
+                Elige qué deseas hacer. Se abrirá la cámara de tu celular en el modo seleccionado para capturar el momento.
               </p>
             </div>
 
-            <div className="space-y-4">
-              {/* Botón principal animado */}
+            <div className="space-y-3.5">
+              {/* Botón 1: Tomar Foto Directa */}
               <button
-                onClick={triggerFileInput}
+                onClick={() => photoInputRef.current?.click()}
                 className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-festive-pink via-festive-purple to-festive-pink bg-[size:200%_auto] text-white font-bold text-lg shadow-xl shadow-festive-pink/20 hover:shadow-festive-pink/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 animate-shimmer scale-pulse flex items-center justify-center space-x-3"
               >
                 <Camera className="w-6 h-6 animate-bounce" />
-                <span>📸 Subir Foto o Video</span>
+                <span>📸 Tomar Foto</span>
               </button>
 
-              <div className="text-center">
+              {/* Botón 2: Grabar Video Directo */}
+              <button
+                onClick={() => videoInputRef.current?.click()}
+                className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-500 via-festive-orange to-amber-500 bg-[size:200%_auto] text-white font-bold text-lg shadow-xl shadow-orange-500/10 hover:shadow-orange-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 animate-shimmer flex items-center justify-center space-x-3"
+              >
+                <VideoIcon className="w-6 h-6 animate-pulse" />
+                <span>🎥 Grabar Video</span>
+              </button>
+
+              <div className="text-center pt-2">
                 <span className="text-xs text-slate-500 flex items-center justify-center space-x-1">
                   <span>Hecho con</span>
                   <Heart className="w-3.5 h-3.5 text-festive-pink fill-festive-pink animate-pulse" />
@@ -373,7 +383,7 @@ export default function App() {
                 className="w-full py-3.5 px-6 rounded-2xl bg-dark-700/80 hover:bg-dark-700 text-slate-300 font-semibold text-sm border border-white/5 active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
               >
                 <RefreshCw className="w-4 h-4" />
-                <span>Elegir otro archivo</span>
+                <span>Tomar otro archivo</span>
               </button>
             </div>
           </section>
@@ -470,11 +480,24 @@ export default function App() {
           </section>
         )}
 
-        {/* Input Oculto de Selección y Captura (acepta fotos y videos) */}
+        {/* --- INPUTS OCULTOS DE CAPTURA DIRECTA --- */}
+
+        {/* Input Oculto de Captura Directa de Foto (Camera) */}
         <input
           type="file"
-          accept="image/*,video/*"
-          ref={fileInputRef}
+          accept="image/*"
+          capture="environment"
+          ref={photoInputRef}
+          onChange={handleFileChange}
+          className="hidden"
+        />
+
+        {/* Input Oculto de Captura Directa de Video (Video Camera) */}
+        <input
+          type="file"
+          accept="video/*"
+          capture="environment"
+          ref={videoInputRef}
           onChange={handleFileChange}
           className="hidden"
         />
