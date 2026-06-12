@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #0B0813;
+    background-image: 
+      radial-gradient(at 10% 20%, rgba(160, 32, 240, 0.1) 0px, transparent 50%),
+      radial-gradient(at 90% 10%, rgba(255, 46, 147, 0.15) 0px, transparent 50%),
+      radial-gradient(at 50% 90%, rgba(255, 215, 0, 0.05) 0px, transparent 50%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+}
+
+/* Glassmorphism utility card */
+.glass-panel {
+  background: rgba(21, 17, 36, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-heavy {
+  background: rgba(11, 8, 19, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 46, 147, 0.15);
+}
+
+/* Shimmer background animation */
+.shimmer-bg {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 46, 147, 0.1) 25%,
+    rgba(160, 32, 240, 0.25) 50%,
+    rgba(255, 46, 147, 0.1) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Glowing text shadows */
+.text-glow-pink {
+  text-shadow: 0 0 15px rgba(255, 46, 147, 0.5);
+}
+
+.text-glow-gold {
+  text-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+}
+
+/* Custom bounce / pulse keyframes if needed */
+.scale-pulse {
+  animation: scale-pulse 2s infinite ease-in-out;
+}
+
+@keyframes scale-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 46, 147, 0.4);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 0 20px 10px rgba(255, 46, 147, 0);
+  }
+}
+
+/* Safe Area Insets for Mobile Devices */
+.safe-padding-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
