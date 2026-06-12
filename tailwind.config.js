@@ -7,31 +7,32 @@ export default {
   theme: {
     extend: {
       colors: {
-        dark: {
-          900: '#0B0813', // Deep purple-black background
-          800: '#151124', // Card background
-          700: '#221C37', // Hover state/border
-          600: '#342C4F', // Accent elements
-        },
-        festive: {
-          pink: '#FF2E93',   // Radiant pink
-          purple: '#A020F0', // Vibrant purple
-          gold: '#FFD700',   // Celebration gold
-          orange: '#FF5E36', // Bright coral
+        invitation: {
+          cream: '#FAF8F5',       // Warm textured paper cream
+          paper: '#FFFDFB',       // Pure white paper card
+          blue: '#A1C6EA',        // Soft baby/metallic blue balloon color
+          blueDark: '#6D92B0',    // Darker steel blue for text/buttons
+          blueLight: '#D9E8F5',   // Very soft blue tint
+          charcoal: '#2D2B2A',    // Script text soft charcoal/black
+          gray: '#EBE7DF',        // Ripped paper shadow/border gray
+          silver: '#E1E7EC',      // Disco ball silver
         }
       },
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'Outfit', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'sans-serif'],
+        cursive: ['Caveat', 'cursive'],
+        serif: ['Cinzel', 'serif'],
+        playfair: ['Playfair Display', 'serif'],
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'float': 'float 6s ease-in-out infinite',
-        'shimmer': 'shimmer 2s linear infinite',
+        'shimmer': 'shimmer 2.5s linear infinite',
       },
       keyframes: {
         float: {
           '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-10px)' },
+          '50%': { transform: 'translateY(-8px)' },
         },
         shimmer: {
           '0%': { backgroundPosition: '-200% 0' },
