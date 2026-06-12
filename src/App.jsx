@@ -367,6 +367,26 @@ export default function App() {
                 <span>🖼️ Elegir de la Galería</span>
               </button>
 
+              {/* Divisor & Botón para ver el Álbum compartido en Drive */}
+              {CONFIG.SHARED_ALBUM_URL && (
+                <>
+                  <div className="flex items-center w-full justify-center my-1">
+                    <div className="h-[1px] bg-invitation-gray flex-1"></div>
+                    <span className="mx-2 text-[10px] text-slate-400 font-sans uppercase tracking-wider">Ver recuerdos</span>
+                    <div className="h-[1px] bg-invitation-gray flex-1"></div>
+                  </div>
+
+                  <a
+                    href={CONFIG.SHARED_ALBUM_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-3.5 px-6 rounded-xl bg-invitation-blueLight/30 border border-invitation-blue/40 hover:bg-invitation-blueLight/50 text-invitation-blueDark font-bold text-sm active:scale-[0.98] transition-all duration-200 flex items-center justify-center space-x-2 shadow-sm btn-shimmer"
+                  >
+                    <span>✨ Ver Álbum de Fotos</span>
+                  </a>
+                </>
+              )}
+
               <div className="text-center pt-2">
                 <span className="font-handwritten text-base text-slate-500 flex items-center justify-center space-x-1 select-none">
                   <span>Viernes 12 de junio - ¡A festejar!</span>
@@ -500,6 +520,17 @@ export default function App() {
             >
               📸 Subir otro recuerdo
             </button>
+
+            {CONFIG.SHARED_ALBUM_URL && (
+              <a
+                href={CONFIG.SHARED_ALBUM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex py-2.5 px-6 rounded-xl bg-invitation-paper border border-invitation-gray text-slate-500 font-semibold text-xs hover:border-invitation-blueDark active:scale-[0.98] transition-all btn-shimmer"
+              >
+                ✨ Ver Álbum de Fotos
+              </a>
+            )}
             
             <p className="text-[10px] text-slate-400 mt-6 font-sans">
               Volviendo al inicio en unos segundos automáticamente...
