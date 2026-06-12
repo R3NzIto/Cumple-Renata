@@ -9,7 +9,7 @@ import {
   Sparkles, 
   User, 
   Image as ImageIcon,
-  Loader2
+  Video as VideoIcon
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { CONFIG } from './config';
@@ -20,19 +20,19 @@ export default function App() {
   const [imagePreview, setImagePreview] = useState(null);
   const [originalFile, setOriginalFile] = useState(null);
   const [guestName, setGuestName] = useState('');
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [loadingMessage, setLoadingMessage] = useState('Procesando foto...');
+  const [fileCategory, setFileCategory] = useState('image'); // 'image' o 'video'
+  const [loadingMessage, setLoadingMessage] = useState('Procesando archivo...');
   const [errorMessage, setErrorMessage] = useState('');
   
   const fileInputRef = useRef(null);
 
   // Mensajes de carga dinámicos para mejorar la experiencia de usuario
   const loadingMessages = [
-    'Optimizando imagen para Google Drive...',
-    'Procesando foto...',
+    'Optimizando archivo para Google Drive...',
+    'Procesando datos del archivo...',
     'Preparando paquete de datos...',
     'Subiendo al álbum de Caro...',
-    'Casi listo, guardando foto...',
+    'Casi listo, guardando en Drive...',
     '¡Listo! Generando confirmación...'
   ];
 
@@ -49,21 +49,29 @@ export default function App() {
     return () => clearInterval(interval);
   }, [status]);
 
-  // Manejar la selección o captura de la foto
+  // Manejar la selección o captura del archivo (foto o video)
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Verificar si el archivo es una imagen
-    if (!file.type.startsWith('image/')) {
-      showError('Por favor, selecciona o toma una imagen válida.');
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/');
+
+    if (!isImage && !isVideo) {
+      showError('Por favor, selecciona una imagen o video válido.');
       return;
     }
 
-    // Validar el tamaño del archivo original (por precaución)
+    const category = isImage ? 'image' : 'video';
+    setFileCategory(category);
+
+    // Validar el tamaño del archivo
+    // 35MB máximo para videos (debido al límite de 50MB en el POST de Google Apps Script)
+    const maxMB = isVideo ? 35 : CONFIG.MAX_FILE_SIZE_MB;
     const fileSizeMB = file.size / (1024 * 1024);
-    if (fileSizeMB > CONFIG.MAX_FILE_SIZE_MB) {
-      showError(`La foto es demasiado grande. El límite es de ${CONFIG.MAX_FILE_SIZE_MB}MB.`);
+    
+    if (fileSizeMB > maxMB) {
+      showError(`El archivo es demasiado grande. El límite para ${isVideo ? 'videos' : 'fotos'} es de ${maxMB}MB.`);
       return;
     }
 
@@ -86,8 +94,6 @@ export default function App() {
   };
 
   // Función para optimizar y redimensionar la imagen en el cliente
-  // Esto reduce fotos de 10MB a menos de 1MB conservando excelente calidad,
-  // evitando timeouts en Google Apps Script y haciendo la carga súper rápida.
   const optimizeImage = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -122,7 +128,7 @@ export default function App() {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Convertir a JPEG con calidad 0.82 (balance óptimo peso/calidad)
+          // Convertir a JPEG con calidad 0.82
           const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
           resolve(dataUrl);
         };
@@ -132,32 +138,36 @@ export default function App() {
     });
   };
 
-  // Subir la foto al backend de Google Apps Script
+  // Subir el archivo al backend de Google Apps Script
   const uploadPhoto = async () => {
     if (!imagePreview) return;
     setStatus('uploading');
-    setLoadingMessage('Optimizando imagen...');
+    setLoadingMessage(fileCategory === 'video' ? 'Procesando video...' : 'Optimizando imagen...');
 
     try {
       let base64Data = '';
-      let mimeType = 'image/jpeg'; // Por defecto tras la optimización
+      let mimeType = originalFile.type;
       
-      try {
-        // Intentar optimizar en Canvas
-        const optimizedDataUrl = await optimizeImage(originalFile);
-        // El formato es: data:image/jpeg;base64,.....
-        base64Data = optimizedDataUrl.split(',')[1];
-      } catch (optimizeError) {
-        console.warn('Fallo la optimización de imagen, se enviará el archivo original:', optimizeError);
-        // Fallback: usar el archivo original tal cual
+      if (fileCategory === 'image') {
+        try {
+          // Intentar optimizar imagen en Canvas
+          const optimizedDataUrl = await optimizeImage(originalFile);
+          base64Data = optimizedDataUrl.split(',')[1];
+          mimeType = 'image/jpeg';
+        } catch (optimizeError) {
+          console.warn('Fallo la optimización de imagen, se enviará el original:', optimizeError);
+          base64Data = imagePreview.split(',')[1];
+        }
+      } else {
+        // En videos no podemos optimizar en Canvas, los enviamos tal cual
         base64Data = imagePreview.split(',')[1];
-        mimeType = originalFile.type;
       }
 
       // Preparar payload
       const nameCleaned = guestName.trim().replace(/[^a-zA-Z0-9]/g, '_') || 'Invitado';
       const timestamp = new Date().getTime();
-      const fileName = `cumple_${nameCleaned}_${timestamp}.jpg`;
+      const extension = originalFile.name.split('.').pop() || (fileCategory === 'video' ? 'mp4' : 'jpg');
+      const fileName = `cumple_${nameCleaned}_${timestamp}.${extension}`;
 
       const payload = {
         name: fileName,
@@ -166,35 +176,15 @@ export default function App() {
         guestName: guestName.trim() || 'Anónimo'
       };
 
-      // Validar si hay URL configurada
       if (!CONFIG.API_URL || CONFIG.API_URL === "TU_GOOGLE_APPS_SCRIPT_URL_AQUI") {
         throw new Error('La URL de Google Apps Script no está configurada. Por favor, edita src/config.js.');
       }
 
-      const response = await fetch(CONFIG.API_URL, {
-        method: 'POST',
-        mode: 'no-cors', // Exigido para peticiones simples de GAS si no se maneja preflight,
-        // pero hemos configurado soporte completo en el Código.gs. Intentamos primero normal:
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
-      });
-
-      // Nota: Si usamos 'no-cors', fetch no tendrá acceso a la respuesta detallada (response.ok será false y status 0).
-      // Para brindar la mejor experiencia, enviamos normal. Si falla por CORS o red, lanzamos error.
-      // Sin embargo, Google Apps Script con redirecciones a veces arroja problemas de CORS.
-      // Para solucionar esto de forma robusta a nivel de código de producción,
-      // intentaremos una petición normal, pero si falla por CORS (status 0) tras enviar el payload,
-      // podemos verificar si se subió correctamente o estructurar la respuesta.
-      // Dado que doPost redirige a un sandbox de Google User Content, la forma más infalible es enviar la petición.
-      // Si usamos fetch normal y el script responde con JSON + CORS headers, todo funciona excelente.
-      
-      // Lanzamos la petición. Con CORS configurado en Código.gs, funcionará de manera nativa.
+      // Petición a Google Apps Script
       const responseData = await fetch(CONFIG.API_URL, {
         method: 'POST',
         headers: {
-          'Content-Type': 'text/plain;charset=utf-8', // Evita el preflight OPTIONS de CORS de manera segura en GAS
+          'Content-Type': 'text/plain;charset=utf-8', // Evita preflight CORS OPTIONS en GAS
         },
         body: JSON.stringify(payload)
       });
@@ -209,9 +199,6 @@ export default function App() {
 
     } catch (err) {
       console.error('Error al subir:', err);
-      // Si es un error de CORS común de Google Apps Script (donde el navegador bloquea la lectura del JSON pero el archivo se subió)
-      // Podemos manejar una confirmación. Pero con nuestra configuración 'text/plain' y retorno CORS,
-      // minimizaremos estos fallos.
       showError(err.message || 'No se pudo conectar con el servidor. Revisa tu conexión.');
     }
   };
@@ -261,7 +248,6 @@ export default function App() {
     setImagePreview(null);
     setOriginalFile(null);
     setErrorMessage('');
-    setUploadProgress(0);
     setStatus('idle');
   };
 
@@ -299,9 +285,9 @@ export default function App() {
               <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-festive-pink to-festive-purple flex items-center justify-center shadow-lg shadow-festive-pink/20 animate-float mb-4">
                 <Camera className="w-10 h-10 text-white" />
               </div>
-              <h2 className="text-lg font-bold text-white mb-2">¡Sube tus fotos a la fiesta!</h2>
+              <h2 className="text-lg font-bold text-white mb-2">¡Sube tus fotos o videos!</h2>
               <p className="text-xs text-slate-400 max-w-[280px]">
-                Presiona el botón para abrir la cámara de tu móvil, capturar una foto o seleccionarla de tu galería.
+                Presiona el botón para abrir la cámara de tu móvil, capturar una foto, grabar un video corto o seleccionarlo desde tu galería.
               </p>
             </div>
 
@@ -312,7 +298,7 @@ export default function App() {
                 className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-festive-pink via-festive-purple to-festive-pink bg-[size:200%_auto] text-white font-bold text-lg shadow-xl shadow-festive-pink/20 hover:shadow-festive-pink/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 animate-shimmer scale-pulse flex items-center justify-center space-x-3"
               >
                 <Camera className="w-6 h-6 animate-bounce" />
-                <span>📸 Tomar o Elegir Foto</span>
+                <span>📸 Subir Foto o Video</span>
               </button>
 
               <div className="text-center">
@@ -326,19 +312,28 @@ export default function App() {
           </section>
         )}
 
-        {/* --- ESTADO: PREVIEW (Previsualización de Foto y Nombre) --- */}
+        {/* --- ESTADO: PREVIEW (Previsualización de Foto/Video y Nombre) --- */}
         {status === 'preview' && (
           <section className="flex-1 flex flex-col justify-between" id="section-preview">
             <div className="space-y-4">
               
-              {/* Contenedor Polaroid-style para la imagen */}
+              {/* Contenedor Polaroid-style para la imagen o video */}
               <div className="bg-white p-3 pb-6 rounded-2xl shadow-2xl rotate-[-1deg] mx-auto max-w-[320px] border border-slate-200">
                 <div className="aspect-[4/3] bg-slate-900 rounded-lg overflow-hidden relative border border-slate-100 flex items-center justify-center">
-                  <img 
-                    src={imagePreview} 
-                    alt="Previsualización" 
-                    className="w-full h-full object-cover"
-                  />
+                  {fileCategory === 'image' ? (
+                    <img 
+                      src={imagePreview} 
+                      alt="Previsualización" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <video 
+                      src={imagePreview} 
+                      controls 
+                      className="w-full h-full object-cover"
+                      playsInline
+                    />
+                  )}
                 </div>
                 <div className="mt-4 flex items-center justify-center">
                   <div className="h-2 w-12 bg-slate-200 rounded-full"></div>
@@ -370,7 +365,7 @@ export default function App() {
                 className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-base shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
               >
                 <Upload className="w-5 h-5" />
-                <span>🚀 Subir Foto al Álbum</span>
+                <span>🚀 Subir {fileCategory === 'video' ? 'Video' : 'Foto'} al Álbum</span>
               </button>
 
               <button
@@ -378,7 +373,7 @@ export default function App() {
                 className="w-full py-3.5 px-6 rounded-2xl bg-dark-700/80 hover:bg-dark-700 text-slate-300 font-semibold text-sm border border-white/5 active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
               >
                 <RefreshCw className="w-4 h-4" />
-                <span>Tomar otra foto</span>
+                <span>Elegir otro archivo</span>
               </button>
             </div>
           </section>
@@ -392,11 +387,17 @@ export default function App() {
               <div className="w-24 h-24 rounded-full border-4 border-dark-700 border-t-festive-pink animate-spin"></div>
               {/* Icono central estático */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <ImageIcon className="w-8 h-8 text-festive-pink animate-pulse" />
+                {fileCategory === 'image' ? (
+                  <ImageIcon className="w-8 h-8 text-festive-pink animate-pulse" />
+                ) : (
+                  <VideoIcon className="w-8 h-8 text-festive-pink animate-pulse" />
+                )}
               </div>
             </div>
 
-            <h3 className="text-xl font-bold text-white mb-2 text-center">Subiendo tu recuerdo</h3>
+            <h3 className="text-xl font-bold text-white mb-2 text-center">
+              Subiendo tu {fileCategory === 'video' ? 'video' : 'foto'}
+            </h3>
             <p className="text-sm text-slate-400 text-center animate-pulse max-w-[260px]">
               {loadingMessage}
             </p>
@@ -407,7 +408,9 @@ export default function App() {
             </div>
             
             <p className="text-[10px] text-slate-500 mt-2">
-              No cierres el navegador ni bloquees tu móvil.
+              {fileCategory === 'video' 
+                ? 'Los videos tardan un poco más debido a su tamaño. No cierres la ventana.' 
+                : 'No cierres el navegador ni bloquees tu móvil.'}
             </p>
           </section>
         )}
@@ -419,7 +422,7 @@ export default function App() {
               <CheckCircle2 className="w-12 h-12" />
             </div>
 
-            <h3 className="text-2xl font-extrabold text-white mb-2">¡Foto subida con éxito! 🎉</h3>
+            <h3 className="text-2xl font-extrabold text-white mb-2">¡Subido con éxito! 🎉</h3>
             <p className="text-sm text-slate-400 max-w-[280px] mb-6">
               Gracias {guestName ? <strong className="text-festive-pink font-semibold">{guestName}</strong> : 'amigo/a'} por capturar este hermoso momento. ¡Ya está en el álbum de Caro!
             </p>
@@ -428,7 +431,7 @@ export default function App() {
               onClick={resetApp}
               className="py-3.5 px-8 rounded-2xl bg-gradient-to-r from-festive-pink to-festive-purple hover:scale-[1.02] text-white font-bold text-sm shadow-md transition-all active:scale-[0.98]"
             >
-              📸 Subir otra foto
+              📸 Subir otro archivo
             </button>
             
             <p className="text-[11px] text-slate-500 mt-6">
@@ -467,11 +470,10 @@ export default function App() {
           </section>
         )}
 
-        {/* Input Oculto de Captura */}
+        {/* Input Oculto de Selección y Captura (acepta fotos y videos) */}
         <input
           type="file"
-          accept="image/*"
-          capture="environment"
+          accept="image/*,video/*"
           ref={fileInputRef}
           onChange={handleFileChange}
           className="hidden"
