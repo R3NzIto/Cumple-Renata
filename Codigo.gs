@@ -2,11 +2,8 @@
 // CONFIGURACIÓN DEL SCRIPT DE GOOGLE
 // ==========================================
 
-// 1. REEMPLAZA esta cadena con el ID o la URL completa de tu carpeta de Google Drive.
-// Ejemplos aceptados:
-// - ID directo: "1XioTmhMIgs_yrrW03bXq5J5Ptx14rphj"
-// - URL completa: "https://drive.google.com/drive/folders/1XioTmhMIgs_yrrW03bXq5J5Ptx14rphj?usp=sharing"
-var FOLDER_ID = "REEMPLAZA_CON_EL_ID_DE_TU_CARPETA_DE_DRIVE";
+// 1. Tu carpeta de Google Drive configurada:
+var FOLDER_ID = "https://drive.google.com/drive/folders/1XioTmhMIgs_yrrW03bXq5J5Ptx14rphj?usp=sharing";
 
 /**
  * Función principal que recibe y procesa las peticiones HTTP POST.
@@ -31,12 +28,12 @@ function doPost(e) {
       return errorResponse("Falta el contenido de la imagen (base64).");
     }
 
-    // 4. Validar que se haya modificado la constante del ID
-    if (FOLDER_ID === "REEMPLAZA_CON_EL_ID_DE_TU_CARPETA_DE_DRIVE" || !FOLDER_ID) {
+    // 4. Validar que se haya modificado el FOLDER_ID
+    if (!FOLDER_ID || FOLDER_ID.indexOf("REEMPLAZA_CON") !== -1 || FOLDER_ID.trim() === "") {
       return errorResponse("Configuración incompleta: FOLDER_ID no configurado en Google Apps Script.");
     }
 
-    // Limpieza automática del ID si el usuario ingresó la URL completa
+    // Limpieza automática del ID si se ingresó la URL completa
     var cleanFolderId = FOLDER_ID.trim();
     if (cleanFolderId.indexOf("drive.google.com") !== -1) {
       var parts = cleanFolderId.split("/");
@@ -70,8 +67,7 @@ function doPost(e) {
       guestName: guestName
     };
 
-    // Google Apps Script maneja automáticamente CORS cuando se hace la redirección
-    // y se retorna como JSON. No se requiere ni existe .setHeaders()
+    // Retornar JSON
     return ContentService.createTextOutput(JSON.stringify(jsonResponse))
       .setMimeType(ContentService.MimeType.JSON);
 
@@ -91,7 +87,7 @@ function doOptions(e) {
 }
 
 /**
- * Helper para estructurar respuestas de error en JSON sin llamadas a setHeaders
+ * Helper para estructurar respuestas de error en JSON
  */
 function errorResponse(message) {
   var errorObj = {
