@@ -17,10 +17,9 @@ import { CONFIG } from './config';
 export default function App() {
   // Estados de la aplicación: 'idle', 'preview', 'uploading', 'success', 'error'
   const [status, setStatus] = useState('idle');
-  const [imagePreview, setImagePreview] = useState(null);
-  const [originalFile, setOriginalFile] = useState(null);
+  const [uploadQueue, setUploadQueue] = useState([]); // Cola de archivos a subir
   const [guestName, setGuestName] = useState('');
-  const [fileCategory, setFileCategory] = useState('image'); // 'image' o 'video'
+  const [fileCategory, setFileCategory] = useState('image'); // 'image' o 'video' (usado para la interfaz)
   const [loadingMessage, setLoadingMessage] = useState('Procesando archivo...');
   const [errorMessage, setErrorMessage] = useState('');
   
@@ -31,7 +30,7 @@ export default function App() {
 
   // Mensajes de carga dinámicos para mejorar la experiencia de usuario
   const loadingMessages = [
-    'Preparando tu recuerdo...',
+    'Preparando tus recuerdos...',
     'Procesando archivo...',
     'Comprimiendo un poco para Drive...',
     'Subiendo al álbum de recuerdos...',
@@ -52,41 +51,82 @@ export default function App() {
     return () => clearInterval(interval);
   }, [status]);
 
-  // Manejar la selección o captura del archivo (foto o video)
+  // Manejar la selección o captura de múltiples archivos
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
 
-    const isImage = file.type.startsWith('image/');
-    const isVideo = file.type.startsWith('video/');
+    const newQueue = [];
+    const errors = [];
 
-    if (!isImage && !isVideo) {
-      showError('Por favor, selecciona una imagen o video válido.');
+    files.forEach((file, index) => {
+      const isImage = file.type.startsWith('image/');
+      const isVideo = file.type.startsWith('video/');
+
+      if (!isImage && !isVideo) {
+        errors.push(`"${file.name}" no es una foto o video válido.`);
+        return;
+      }
+
+      // Validar el tamaño del archivo
+      // 35MB máximo para videos (límite de 50MB en el POST de Google Apps Script)
+      const isItemVideo = isVideo;
+      const maxMB = isItemVideo ? 35 : CONFIG.MAX_FILE_SIZE_MB;
+      const fileSizeMB = file.size / (1024 * 1024);
+      
+      if (fileSizeMB > maxMB) {
+        errors.push(`"${file.name}" supera el límite (${maxMB}MB).`);
+        return;
+      }
+
+      newQueue.push({
+        id: `${Date.now()}-${index}-${Math.random().toString(36).substr(2, 5)}`,
+        file: file,
+        category: isImage ? 'image' : 'video',
+        previewUrl: URL.createObjectURL(file), // Genera una URL local para la preview (evita crashes de memoria)
+        status: 'pending',
+        error: ''
+      });
+    });
+
+    if (errors.length > 0) {
+      showError(errors.join('\n'));
       return;
     }
 
-    const category = isImage ? 'image' : 'video';
-    setFileCategory(category);
-
-    // Validar el tamaño del archivo (35MB para videos)
-    const maxMB = isVideo ? 35 : CONFIG.MAX_FILE_SIZE_MB;
-    const fileSizeMB = file.size / (1024 * 1024);
-    
-    if (fileSizeMB > maxMB) {
-      showError(`El archivo es demasiado grande. El límite para ${isVideo ? 'videos' : 'fotos'} es de ${maxMB}MB.`);
-      return;
-    }
-
-    setOriginalFile(file);
-    setStatus('selecting');
-
-    // Generar previsualización local
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result);
+    if (newQueue.length > 0) {
+      // Si ya había elementos (raro en este flujo, pero preventivo), liberamos sus urls antiguas
+      uploadQueue.forEach(item => URL.revokeObjectURL(item.previewUrl));
+      
+      // Establecer categoría general de la subida para mensajes
+      setFileCategory(newQueue.length === 1 ? newQueue[0].category : 'mix');
+      setUploadQueue(newQueue);
       setStatus('preview');
-    };
-    reader.readAsDataURL(file);
+    }
+  };
+
+  const removeFromQueue = (id) => {
+    const itemToRemove = uploadQueue.find(item => item.id === id);
+    if (itemToRemove) {
+      URL.revokeObjectURL(itemToRemove.previewUrl); // Liberar memoria
+    }
+    const updatedQueue = uploadQueue.filter(item => item.id !== id);
+    if (updatedQueue.length === 0) {
+      resetApp();
+    } else {
+      setUploadQueue(updatedQueue);
+      setFileCategory(updatedQueue.length === 1 ? updatedQueue[0].category : 'mix');
+    }
+  };
+
+  // Convertir archivo a Base64
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
   };
 
   // Función para optimizar y redimensionar la imagen en el cliente
@@ -134,74 +174,90 @@ export default function App() {
     });
   };
 
-  // Subir el archivo al backend de Google Apps Script
-  const uploadPhoto = async () => {
-    if (!imagePreview) return;
+  // Subir todos los archivos secuencialmente para evitar el límite de 50MB por post de Google
+  const startQueueUpload = async () => {
+    if (uploadQueue.length === 0) return;
     setStatus('uploading');
-    setLoadingMessage(fileCategory === 'video' ? 'Subiendo tu video...' : 'Optimizando imagen...');
+    
+    let successCount = 0;
+    let failCount = 0;
+    const queueCopy = [...uploadQueue];
 
-    try {
-      let base64Data = '';
-      let mimeType = originalFile.type;
+    for (let i = 0; i < queueCopy.length; i++) {
+      const item = queueCopy[i];
+      setLoadingMessage(`Subiendo archivo ${i + 1} de ${queueCopy.length}...`);
       
-      if (fileCategory === 'image') {
-        try {
-          // Intentar optimizar imagen en Canvas
-          const optimizedDataUrl = await optimizeImage(originalFile);
-          base64Data = optimizedDataUrl.split(',')[1];
-          mimeType = 'image/jpeg';
-        } catch (optimizeError) {
-          console.warn('Fallo la optimización de imagen, se enviará el original:', optimizeError);
-          base64Data = imagePreview.split(',')[1];
+      item.status = 'uploading';
+      setUploadQueue([...queueCopy]);
+
+      try {
+        let base64Data = '';
+        let mimeType = item.file.type;
+        
+        if (item.category === 'image') {
+          try {
+            // Optimizar imagen en Canvas
+            const optimizedDataUrl = await optimizeImage(item.file);
+            base64Data = optimizedDataUrl.split(',')[1];
+            mimeType = 'image/jpeg';
+          } catch (optimizeError) {
+            console.warn('Fallo la optimización de imagen, se enviará el original:', optimizeError);
+            base64Data = await fileToBase64(item.file);
+          }
+        } else {
+          base64Data = await fileToBase64(item.file);
         }
-      } else {
-        base64Data = imagePreview.split(',')[1];
+
+        // Preparar payload
+        const nameCleaned = guestName.trim().replace(/[^a-zA-Z0-9]/g, '_') || 'Invitado';
+        const timestamp = new Date().getTime();
+        const extension = item.file.name.split('.').pop() || (item.category === 'video' ? 'mp4' : 'jpg');
+        const fileName = `cumple_${nameCleaned}_${timestamp}_${i}.${extension}`;
+
+        const payload = {
+          name: fileName,
+          mimeType: mimeType,
+          base64: base64Data,
+          guestName: guestName.trim() || 'Anónimo'
+        };
+
+        if (!CONFIG.API_URL || CONFIG.API_URL === "TU_GOOGLE_APPS_SCRIPT_URL_AQUI") {
+          throw new Error('La URL de Google Apps Script no está configurada.');
+        }
+
+        // Petición POST individual por archivo
+        await fetch(CONFIG.API_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8',
+          },
+          body: JSON.stringify(payload)
+        });
+
+        item.status = 'success';
+        successCount++;
+      } catch (err) {
+        console.error('Error al subir archivo:', err);
+        item.status = 'error';
+        item.error = err.message || 'Error de conexión.';
+        failCount++;
       }
 
-      // Preparar payload
-      const nameCleaned = guestName.trim().replace(/[^a-zA-Z0-9]/g, '_') || 'Invitado';
-      const timestamp = new Date().getTime();
-      const extension = originalFile.name.split('.').pop() || (fileCategory === 'video' ? 'mp4' : 'jpg');
-      const fileName = `cumple_${nameCleaned}_${timestamp}.${extension}`;
+      setUploadQueue([...queueCopy]);
+    }
 
-      const payload = {
-        name: fileName,
-        mimeType: mimeType,
-        base64: base64Data,
-        guestName: guestName.trim() || 'Anónimo'
-      };
-
-      if (!CONFIG.API_URL || CONFIG.API_URL === "TU_GOOGLE_APPS_SCRIPT_URL_AQUI") {
-        throw new Error('La URL de Google Apps Script no está configurada. Por favor, edita src/config.js.');
-      }
-
-      // Petición a Google Apps Script
-      // Usamos 'mode: no-cors' porque iOS Safari bloquea estrictamente las redirecciones CORS 
-      // de peticiones POST cruzadas (Google Apps Script redirige a googleusercontent.com).
-      // Al usar 'no-cors', Safari permite la petición de escritura y, si no lanza error de red,
-      // podemos asumir el éxito de la carga de forma 100% confiable.
-      await fetch(CONFIG.API_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8',
-        },
-        body: JSON.stringify(payload)
-      });
-
-      // Forzar transicion de éxito tras finalizar el POST
+    if (failCount === 0) {
       triggerSuccess();
-
-    } catch (err) {
-      console.error('Error al subir:', err);
-      showError(err.message || 'No se pudo conectar con el servidor. Revisa tu conexión.');
+    } else {
+      showError(`Subida parcial: se subieron ${successCount} archivos con éxito, pero ${failCount} fallaron.`);
     }
   };
 
   const triggerSuccess = () => {
     setStatus('success');
     
-    // Disparar confeti con la paleta de colores de la invitación
+    // Disparar confeti
     const duration = 3.5 * 1000;
     const end = Date.now() + duration;
 
@@ -226,7 +282,6 @@ export default function App() {
       }
     }());
 
-    // Limpiar formulario tras 6 segundos y volver a idle automáticamente
     const timer = setTimeout(() => {
       resetApp();
     }, 6000);
@@ -240,8 +295,10 @@ export default function App() {
   };
 
   const resetApp = () => {
-    setImagePreview(null);
-    setOriginalFile(null);
+    // Liberar URLs de memoria
+    uploadQueue.forEach(item => URL.revokeObjectURL(item.previewUrl));
+    
+    setUploadQueue([]);
     setErrorMessage('');
     
     // Limpiar los inputs
@@ -252,9 +309,6 @@ export default function App() {
     setStatus('idle');
   };
 
-  // Estilos de inputs ocultos adaptados para iOS / Safari.
-  // Safari bloquea la simulación de clics programáticos (como input.click()) en elementos
-  // que tengan "display: none" (el "hidden" de Tailwind). Usamos opacidad y posición absoluta.
   const hiddenInputStyle = {
     opacity: 0,
     position: 'absolute',
@@ -269,16 +323,16 @@ export default function App() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-4 safe-padding-bottom">
       
-      {/* Elementos Decorativos Flotantes de la Invitación (Sway suave) */}
+      {/* Elementos Decorativos Flotantes */}
       <div className="absolute top-12 left-8 text-4xl select-none pointer-events-none opacity-40 animate-sway">🪩</div>
       <div className="absolute bottom-16 right-8 text-4xl select-none pointer-events-none opacity-30 animate-sway" style={{ animationDelay: '2s' }}>✨</div>
       <div className="absolute top-1/4 right-10 text-3xl select-none pointer-events-none opacity-20 animate-sway" style={{ animationDelay: '3.5s' }}>💙</div>
       <div className="absolute bottom-1/4 left-10 text-3xl select-none pointer-events-none opacity-25 animate-sway" style={{ animationDelay: '1s' }}>🎈</div>
 
-      {/* Tarjeta de Invitación Premium (paper-card con animación de entrada fadeInUp) */}
+      {/* Tarjeta de Invitación Premium */}
       <div className="w-full max-w-md paper-card rounded-2xl p-6 md:p-8 flex flex-col relative overflow-hidden transition-all duration-300">
         
-        {/* Borde sutil superior en degradado de azul metalizado y plata */}
+        {/* Borde sutil superior */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-invitation-blue via-invitation-silver to-invitation-blueDark"></div>
 
         {/* Titular Principal / Header */}
@@ -290,11 +344,9 @@ export default function App() {
           </div>
           
           <div className="flex flex-col items-center select-none mb-1">
-            {/* Texto Serif elegante */}
             <span className="font-serif tracking-[0.25em] text-xs font-bold text-invitation-blueDark uppercase">
               I'M TURNING
             </span>
-            {/* Número / Edad en grande */}
             <span className="text-4xl font-extrabold text-[#789BB9] drop-shadow-sm select-none font-serif py-1 tracking-wider">
               21
             </span>
@@ -316,14 +368,11 @@ export default function App() {
           </p>
         </header>
 
-        {/* --- ESTADO: IDLE (Pantalla de Bienvenida con Botones Estilo Invitación y Transición animate-fade-in) --- */}
+        {/* --- ESTADO: IDLE (Pantalla de Bienvenida) --- */}
         {status === 'idle' && (
           <section className="flex-1 flex flex-col justify-between animate-fade-in" id="section-idle">
             
-            {/* Ilustración de Disco Ball y Notas */}
             <div className="flex flex-col items-center text-center my-4 py-5 px-4 rounded-xl bg-invitation-blueLight/20 border border-invitation-blue/20 relative">
-              
-              {/* Cinta adhesiva decorativa simulada arriba */}
               <div className="absolute -top-3 w-20 h-5 tape-decor"></div>
               
               <div className="w-16 h-16 rounded-full bg-invitation-blueLight/50 flex items-center justify-center shadow-blue-balloon mb-3.5">
@@ -334,13 +383,13 @@ export default function App() {
                 ¿Qué vas a subir hoy?
               </h2>
               <p className="text-xs text-slate-500 max-w-[240px] leading-relaxed">
-                Toma una foto en vivo, graba un video divertido o elige un archivo de tu biblioteca.
+                Toma fotos/videos en vivo o selecciona varios archivos de tu galería para subirlos juntos.
               </p>
             </div>
 
             <div className="space-y-3 mt-4">
               
-              {/* Botón 1: Tomar Foto (Azul metalizado globo) */}
+              {/* Botón 1: Tomar Foto (Azul) */}
               <button
                 onClick={() => photoInputRef.current?.click()}
                 className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-invitation-blue to-invitation-blueDark hover:from-[#A8CDEE] hover:to-[#7499B7] text-white font-bold text-base shadow-blue-balloon hover:scale-[1.015] active:scale-[0.98] transition-all duration-300 flex items-center justify-center space-x-2.5 btn-shimmer"
@@ -349,7 +398,7 @@ export default function App() {
                 <span>📸 Tomar Foto</span>
               </button>
 
-              {/* Botón 2: Grabar Video (Champán / Oro suave retro) */}
+              {/* Botón 2: Grabar Video (Champán) */}
               <button
                 onClick={() => videoInputRef.current?.click()}
                 className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-[#DCD3C4] to-[#B8AD99] hover:from-[#E4DCCE] hover:to-[#C2B7A3] text-invitation-charcoal font-bold text-base shadow-md hover:scale-[1.015] active:scale-[0.98] transition-all duration-300 flex items-center justify-center space-x-2.5 btn-shimmer"
@@ -358,16 +407,16 @@ export default function App() {
                 <span>🎥 Grabar Video</span>
               </button>
 
-              {/* Botón 3: Seleccionar de la Galería (Blanco papel con borde gris) */}
+              {/* Botón 3: Cargar desde Galería (Múltiple) */}
               <button
                 onClick={() => galleryInputRef.current?.click()}
                 className="w-full py-3 px-6 rounded-xl bg-invitation-paper border border-invitation-gray hover:border-invitation-blueDark hover:scale-[1.015] text-invitation-charcoal font-semibold text-sm active:scale-[0.98] transition-all duration-200 flex items-center justify-center space-x-2 shadow-sm btn-shimmer"
               >
                 <ImageIcon className="w-4 h-4 text-invitation-blueDark" />
-                <span>🖼️ Elegir de la Galería</span>
+                <span>🖼️ Elegir de la Galería (Varios)</span>
               </button>
 
-              {/* Divisor & Botón para ver el Álbum compartido en Drive */}
+              {/* Divisor & Botón para ver el Álbum */}
               {CONFIG.SHARED_ALBUM_URL && (
                 <>
                   <div className="flex items-center w-full justify-center my-1">
@@ -397,35 +446,85 @@ export default function App() {
           </section>
         )}
 
-        {/* --- ESTADO: PREVIEW (Previsualización polaroid de la Foto/Video con Transición animate-fade-in) --- */}
+        {/* --- ESTADO: PREVIEW (Soporta Polaroid individual o Grid múltiple) --- */}
         {status === 'preview' && (
           <section className="flex-1 flex flex-col justify-between animate-fade-in" id="section-preview">
             <div className="space-y-4">
               
-              {/* Contenedor Polaroid-style */}
-              <div className="bg-white p-3.5 pb-8 rounded shadow-xl rotate-[-1deg] mx-auto max-w-[300px] border border-slate-100 polaroid-frame">
-                <div className="aspect-[4/3] bg-slate-100 rounded overflow-hidden relative border border-slate-200/60 flex items-center justify-center">
-                  {fileCategory === 'image' ? (
-                    <img 
-                      src={imagePreview} 
-                      alt="Previsualización" 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <video 
-                      src={imagePreview} 
-                      controls 
-                      className="w-full h-full object-cover"
-                      playsInline
-                    />
-                  )}
+              {/* Renderizado dinámico según la cantidad de archivos */}
+              {uploadQueue.length === 1 ? (
+                /* Polaroid individual */
+                <div className="bg-white p-3.5 pb-8 rounded shadow-xl rotate-[-1deg] mx-auto max-w-[280px] border border-slate-100 polaroid-frame">
+                  <div className="aspect-[4/3] bg-slate-100 rounded overflow-hidden relative border border-slate-200/60 flex items-center justify-center">
+                    {uploadQueue[0].category === 'image' ? (
+                      <img 
+                        src={uploadQueue[0].previewUrl} 
+                        alt="Previsualización" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <video 
+                        src={uploadQueue[0].previewUrl} 
+                        controls 
+                        className="w-full h-full object-cover"
+                        playsInline
+                      />
+                    )}
+                  </div>
+                  <div className="mt-4 flex flex-col items-center">
+                    <span className="font-handwritten text-lg text-slate-600">
+                      {uploadQueue[0].category === 'video' ? '🎬 Mi Video' : '📸 Mi Recuerdo'}
+                    </span>
+                  </div>
                 </div>
-                <div className="mt-4 flex flex-col items-center">
-                  <span className="font-handwritten text-lg text-slate-600">
-                    {fileCategory === 'video' ? '🎬 Mi Video' : '📸 Mi Recuerdo'}
-                  </span>
+              ) : (
+                /* Grid de múltiples fotos/videos */
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center px-1">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      Archivos seleccionados ({uploadQueue.length})
+                    </span>
+                    <span className="text-[10px] text-slate-400 italic">Puedes quitar con la cruz</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3.5 max-h-[250px] overflow-y-auto p-2 border border-invitation-gray/50 rounded-xl bg-[#FAF8F5]/60 shadow-inner">
+                    {uploadQueue.map((item) => (
+                      <div key={item.id} className="bg-white p-1.5 pb-4 rounded shadow border border-slate-100/80 relative group hover:scale-[1.01] transition-all">
+                        
+                        {/* Botón para remover de la cola */}
+                        <button
+                          onClick={() => removeFromQueue(item.id)}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-500 hover:bg-rose-600 text-white font-bold text-[10px] flex items-center justify-center shadow z-10 transition-colors"
+                        >
+                          ✕
+                        </button>
+
+                        <div className="aspect-[4/3] bg-slate-200 rounded overflow-hidden relative flex items-center justify-center border border-slate-100">
+                          {item.category === 'image' ? (
+                            <img 
+                              src={item.previewUrl} 
+                              alt="Miniatura" 
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="relative w-full h-full">
+                              <video 
+                                src={item.previewUrl} 
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                <VideoIcon className="w-5 h-5 text-white animate-pulse" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-[9px] text-slate-500 text-center mt-1 truncate px-1">
+                          {item.file.name}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Input para el Nombre del Invitado */}
               <div className="bg-invitation-blueLight/10 p-4 rounded-xl border border-invitation-gray space-y-2 mt-2">
@@ -448,11 +547,13 @@ export default function App() {
             {/* Botonera de Acción */}
             <div className="flex flex-col space-y-2.5 mt-5">
               <button
-                onClick={uploadPhoto}
+                onClick={startQueueUpload}
                 className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 hover:scale-[1.015] text-white font-bold text-base shadow-md active:scale-[0.98] transition-all flex items-center justify-center space-x-2 btn-shimmer"
               >
                 <Upload className="w-5 h-5" />
-                <span>🚀 Compartir en el Álbum</span>
+                <span>
+                  🚀 Compartir {uploadQueue.length > 1 ? `estos ${uploadQueue.length} recuerdos` : 'recuerdo'}
+                </span>
               </button>
 
               <button
@@ -460,65 +561,63 @@ export default function App() {
                 className="w-full py-2.5 px-6 rounded-xl bg-invitation-paper hover:bg-slate-50 text-slate-500 font-semibold text-xs border border-invitation-gray active:scale-[0.98] transition-all flex items-center justify-center space-x-1.5 shadow-sm btn-shimmer"
               >
                 <RefreshCw className="w-3 h-3" />
-                <span>Elegir otro archivo</span>
+                <span>Elegir otros archivos</span>
               </button>
             </div>
           </section>
         )}
 
-        {/* --- ESTADO: UPLOADING (Cargando con Transición animate-fade-in) --- */}
+        {/* --- ESTADO: UPLOADING (Subida secuencial en cola) --- */}
         {status === 'uploading' && (
           <section className="flex-1 flex flex-col items-center justify-center py-10 animate-fade-in" id="section-uploading">
             <div className="relative mb-6">
-              {/* Spinner animado circular */}
               <div className="w-20 h-20 rounded-full border-4 border-slate-100 border-t-invitation-blueDark animate-spin"></div>
-              {/* Icono central estático */}
               <div className="absolute inset-0 flex items-center justify-center">
-                {fileCategory === 'image' ? (
-                  <ImageIcon className="w-7 h-7 text-invitation-blueDark animate-pulse" />
-                ) : (
+                {fileCategory === 'video' ? (
                   <VideoIcon className="w-7 h-7 text-invitation-blueDark animate-pulse" />
+                ) : (
+                  <ImageIcon className="w-7 h-7 text-invitation-blueDark animate-pulse" />
                 )}
               </div>
             </div>
 
             <h3 className="text-lg font-bold text-invitation-charcoal mb-1.5 text-center">
-              Guardando tu recuerdo...
+              Guardando recuerdos...
             </h3>
             <p className="text-xs text-slate-500 text-center animate-pulse font-sans max-w-[260px]">
               {loadingMessage}
             </p>
 
-            {/* Barra de progreso visual simulada */}
+            {/* Barra de progreso visual */}
             <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mt-6 border border-invitation-gray/50 max-w-[240px]">
               <div className="h-full bg-gradient-to-r from-invitation-blue to-invitation-blueDark w-[80%] rounded-full"></div>
             </div>
             
-            <p className="text-[10px] text-slate-400 mt-3 font-sans">
-              No cierres la página web ni bloquees tu celular.
+            <p className="text-[10px] text-slate-400 mt-4 font-sans text-center">
+              Subiendo archivos uno a uno para evitar límites de tamaño. No cierres la ventana.
             </p>
           </section>
         )}
 
-        {/* --- ESTADO: SUCCESS (Subida Exitosa con Transición animate-fade-in) --- */}
+        {/* --- ESTADO: SUCCESS --- */}
         {status === 'success' && (
           <section className="flex-1 flex flex-col items-center text-center py-6 animate-fade-in" id="section-success">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-5 animate-bounce">
+            <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 mb-5 animate-bounce">
               <CheckCircle2 className="w-10 h-10" />
             </div>
 
             <h3 className="font-handwritten text-3xl font-extrabold text-invitation-charcoal mb-2">
-              ¡Guardado con éxito! 🎉
+              ¡Guardados con éxito! 🎉
             </h3>
             <p className="text-xs text-slate-500 max-w-[260px] leading-relaxed mb-6 font-sans">
-              Muchas gracias {guestName ? <strong className="text-invitation-blueDark font-bold">{guestName}</strong> : 'amigo/a'} por capturar este momento. Ya está en la carpeta de Drive de Caro.
+              Muchas gracias {guestName ? <strong className="text-invitation-blueDark font-bold">{guestName}</strong> : 'amigo/a'} por capturar estos momentos. Ya están en la carpeta de Drive de Caro.
             </p>
 
             <button
               onClick={resetApp}
               className="py-3 px-8 rounded-xl bg-gradient-to-r from-invitation-blue to-invitation-blueDark hover:shadow-blue-balloon text-white font-bold text-sm shadow-md transition-all active:scale-[0.98] btn-shimmer"
             >
-              📸 Subir otro recuerdo
+              📸 Subir más recuerdos
             </button>
 
             {CONFIG.SHARED_ALBUM_URL && (
@@ -538,7 +637,7 @@ export default function App() {
           </section>
         )}
 
-        {/* --- ESTADO: ERROR (Pantalla de Error con Transición animate-fade-in) --- */}
+        {/* --- ESTADO: ERROR --- */}
         {status === 'error' && (
           <section className="flex-1 flex flex-col items-center text-center py-6 animate-fade-in" id="section-error">
             <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 mb-5 animate-pulse">
@@ -546,16 +645,16 @@ export default function App() {
             </div>
 
             <h3 className="text-lg font-bold text-invitation-charcoal mb-2">Hubo un pequeño error</h3>
-            <p className="text-xs text-rose-800 bg-rose-50/70 p-4 rounded-xl border border-rose-100 max-w-sm mb-6 text-left break-words">
+            <p className="text-xs text-rose-800 bg-rose-50/70 p-4 rounded-xl border border-rose-100 max-w-sm mb-6 text-left break-words whitespace-pre-line">
               {errorMessage}
             </p>
 
             <div className="flex flex-col w-full space-y-2">
               <button
-                onClick={uploadPhoto}
+                onClick={startQueueUpload}
                 className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-invitation-blue to-invitation-blueDark text-white font-bold text-sm shadow-md transition-all active:scale-[0.98] btn-shimmer"
               >
-                🔄 Reintentar subir
+                🔄 Reintentar subir archivos fallidos
               </button>
               
               <button
@@ -568,7 +667,7 @@ export default function App() {
           </section>
         )}
 
-        {/* --- INPUTS DE CARGA (Estilizados para evitar bloqueo de Safari en iOS) --- */}
+        {/* --- INPUTS DE CARGA --- */}
 
         {/* Input Oculto de Captura Directa de Foto (Camera) */}
         <input
@@ -590,10 +689,11 @@ export default function App() {
           style={hiddenInputStyle}
         />
 
-        {/* Input Oculto para Carga desde Galería/Archivos */}
+        {/* Input Oculto para Carga desde Galería/Archivos (Múltiple) */}
         <input
           type="file"
           accept="image/*,video/*"
+          multiple
           ref={galleryInputRef}
           onChange={handleFileChange}
           style={hiddenInputStyle}
