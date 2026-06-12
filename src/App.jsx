@@ -24,9 +24,10 @@ export default function App() {
   const [loadingMessage, setLoadingMessage] = useState('Procesando archivo...');
   const [errorMessage, setErrorMessage] = useState('');
   
-  // Refs independientes para forzar el comportamiento nativo de captura de foto y video
+  // Refs independientes para cada acción de carga
   const photoInputRef = useRef(null);
   const videoInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
 
   // Mensajes de carga dinámicos para mejorar la experiencia de usuario
   const loadingMessages = [
@@ -245,9 +246,10 @@ export default function App() {
     setOriginalFile(null);
     setErrorMessage('');
     
-    // Limpiar los inputs para permitir subir la misma foto/video seguidos si se desea
+    // Limpiar los inputs para permitir subir el mismo archivo seguidos si se desea
     if (photoInputRef.current) photoInputRef.current.value = "";
     if (videoInputRef.current) videoInputRef.current.value = "";
+    if (galleryInputRef.current) galleryInputRef.current.value = "";
     
     setStatus('idle');
   };
@@ -279,7 +281,7 @@ export default function App() {
           </p>
         </header>
 
-        {/* --- ESTADO: IDLE (Pantalla de Bienvenida con Doble Botón) --- */}
+        {/* --- ESTADO: IDLE (Pantalla de Bienvenida con Triple Botón) --- */}
         {status === 'idle' && (
           <section className="flex-1 flex flex-col justify-between" id="section-idle">
             <div className="flex flex-col items-center text-center my-6 py-6 px-4 rounded-2xl bg-dark-800/40 border border-white/5 relative group">
@@ -288,11 +290,11 @@ export default function App() {
               </div>
               <h2 className="text-lg font-bold text-white mb-2">¡Sube tus recuerdos a la fiesta!</h2>
               <p className="text-xs text-slate-400 max-w-[280px]">
-                Elige qué deseas hacer. Se abrirá la cámara de tu celular en el modo seleccionado para capturar el momento.
+                Toma una foto, graba un video en vivo desde tu cámara o selecciona uno que ya tengas en tu galería.
               </p>
             </div>
 
-            <div className="space-y-3.5">
+            <div className="space-y-3">
               {/* Botón 1: Tomar Foto Directa */}
               <button
                 onClick={() => photoInputRef.current?.click()}
@@ -309,6 +311,15 @@ export default function App() {
               >
                 <VideoIcon className="w-6 h-6 animate-pulse" />
                 <span>🎥 Grabar Video</span>
+              </button>
+
+              {/* Botón 3: Cargar desde Galería */}
+              <button
+                onClick={() => galleryInputRef.current?.click()}
+                className="w-full py-3.5 px-6 rounded-2xl bg-dark-700/80 hover:bg-dark-700 border border-white/5 text-slate-300 font-semibold text-base active:scale-[0.98] transition-all flex items-center justify-center space-x-2.5 hover:border-slate-500"
+              >
+                <ImageIcon className="w-5 h-5 text-festive-gold" />
+                <span>🖼️ Elegir de la Galería</span>
               </button>
 
               <div className="text-center pt-2">
@@ -383,7 +394,7 @@ export default function App() {
                 className="w-full py-3.5 px-6 rounded-2xl bg-dark-700/80 hover:bg-dark-700 text-slate-300 font-semibold text-sm border border-white/5 active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
               >
                 <RefreshCw className="w-4 h-4" />
-                <span>Tomar otro archivo</span>
+                <span>Elegir otro archivo</span>
               </button>
             </div>
           </section>
@@ -480,7 +491,7 @@ export default function App() {
           </section>
         )}
 
-        {/* --- INPUTS OCULTOS DE CAPTURA DIRECTA --- */}
+        {/* --- INPUTS OCULTOS DE CARGA --- */}
 
         {/* Input Oculto de Captura Directa de Foto (Camera) */}
         <input
@@ -498,6 +509,15 @@ export default function App() {
           accept="video/*"
           capture="environment"
           ref={videoInputRef}
+          onChange={handleFileChange}
+          className="hidden"
+        />
+
+        {/* Input Oculto para Carga desde Galería/Archivos (sin forzar cámara) */}
+        <input
+          type="file"
+          accept="image/*,video/*"
+          ref={galleryInputRef}
           onChange={handleFileChange}
           className="hidden"
         />
