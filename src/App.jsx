@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Camera, 
-  Upload, 
-  RefreshCw, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Heart, 
-  Sparkles, 
-  User, 
+import {
+  Camera,
+  Upload,
+  RefreshCw,
+  CheckCircle2,
+  AlertTriangle,
+  Heart,
+  Sparkles,
+  User,
   Image as ImageIcon,
   Video as VideoIcon
 } from 'lucide-react';
@@ -23,7 +23,7 @@ export default function App() {
   const [fileCategory, setFileCategory] = useState('image'); // 'image' o 'video'
   const [loadingMessage, setLoadingMessage] = useState('Procesando archivo...');
   const [errorMessage, setErrorMessage] = useState('');
-  
+
   // Refs independientes para cada acción de carga
   const photoInputRef = useRef(null);
   const videoInputRef = useRef(null);
@@ -71,7 +71,7 @@ export default function App() {
     // Validar el tamaño del archivo (35MB para videos)
     const maxMB = isVideo ? 35 : CONFIG.MAX_FILE_SIZE_MB;
     const fileSizeMB = file.size / (1024 * 1024);
-    
+
     if (fileSizeMB > maxMB) {
       showError(`El archivo es demasiado grande. El límite para ${isVideo ? 'videos' : 'fotos'} es de ${maxMB}MB.`);
       return;
@@ -101,7 +101,7 @@ export default function App() {
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          
+
           // Resolución máxima
           const MAX_WIDTH = 1920;
           const MAX_HEIGHT = 1920;
@@ -120,7 +120,7 @@ export default function App() {
 
           canvas.width = width;
           canvas.height = height;
-          
+
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
@@ -143,7 +143,7 @@ export default function App() {
     try {
       let base64Data = '';
       let mimeType = originalFile.type;
-      
+
       if (fileCategory === 'image') {
         try {
           // Intentar optimizar imagen en Canvas
@@ -200,7 +200,7 @@ export default function App() {
 
   const triggerSuccess = () => {
     setStatus('success');
-    
+
     // Disparar confeti con la paleta de colores de la invitación
     const duration = 3.5 * 1000;
     const end = Date.now() + duration;
@@ -243,18 +243,18 @@ export default function App() {
     setImagePreview(null);
     setOriginalFile(null);
     setErrorMessage('');
-    
+
     // Limpiar los inputs
     if (photoInputRef.current) photoInputRef.current.value = "";
     if (videoInputRef.current) videoInputRef.current.value = "";
     if (galleryInputRef.current) galleryInputRef.current.value = "";
-    
+
     setStatus('idle');
   };
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-4 safe-padding-bottom">
-      
+
       {/* Elementos Decorativos Flotantes de la Invitación (Sway suave) */}
       <div className="absolute top-12 left-8 text-4xl select-none pointer-events-none opacity-40 animate-sway">🪩</div>
       <div className="absolute bottom-16 right-8 text-4xl select-none pointer-events-none opacity-30 animate-sway" style={{ animationDelay: '2s' }}>✨</div>
@@ -263,7 +263,7 @@ export default function App() {
 
       {/* Tarjeta de Invitación Premium (paper-card con animación de entrada fadeInUp) */}
       <div className="w-full max-w-md paper-card rounded-2xl p-6 md:p-8 flex flex-col relative overflow-hidden transition-all duration-300">
-        
+
         {/* Borde sutil superior en degradado de azul metalizado y plata */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-invitation-blue via-invitation-silver to-invitation-blueDark"></div>
 
@@ -274,7 +274,7 @@ export default function App() {
               ÁLBUM RECUERDO
             </span>
           </div>
-          
+
           <div className="flex flex-col items-center select-none mb-1">
             {/* Texto Serif elegante */}
             <span className="font-serif tracking-[0.25em] text-xs font-bold text-invitation-blueDark uppercase">
@@ -289,14 +289,14 @@ export default function App() {
           <h1 className="font-handwritten text-4xl md:text-5xl font-bold text-invitation-charcoal mt-1">
             ¡Cumple Caro!
           </h1>
-          
+
           {/* Línea divisoria decorativa con un moño */}
           <div className="flex items-center w-3/4 justify-center my-3">
             <div className="h-[1px] bg-invitation-gray flex-1"></div>
             <span className="mx-2 text-xs text-slate-400 select-none">🎀</span>
             <div className="h-[1px] bg-invitation-gray flex-1"></div>
           </div>
-          
+
           <p className="text-xs font-sans text-slate-500 italic max-w-[280px]">
             Comparte tus mejores capturas de la noche directamente al álbum
           </p>
@@ -305,17 +305,17 @@ export default function App() {
         {/* --- ESTADO: IDLE (Pantalla de Bienvenida con Botones Estilo Invitación y Transición animate-fade-in) --- */}
         {status === 'idle' && (
           <section className="flex-1 flex flex-col justify-between animate-fade-in" id="section-idle">
-            
+
             {/* Ilustración de Disco Ball y Notas */}
             <div className="flex flex-col items-center text-center my-4 py-5 px-4 rounded-xl bg-invitation-blueLight/20 border border-invitation-blue/20 relative">
-              
+
               {/* Cinta adhesiva decorativa simulada arriba */}
               <div className="absolute -top-3 w-20 h-5 tape-decor"></div>
-              
+
               <div className="w-16 h-16 rounded-full bg-invitation-blueLight/50 flex items-center justify-center shadow-blue-balloon mb-3.5">
                 <Camera className="w-8 h-8 text-invitation-blueDark animate-pulse" style={{ animationDuration: '3s' }} />
               </div>
-              
+
               <h2 className="font-handwritten text-2xl font-bold text-invitation-charcoal mb-1">
                 ¿Qué vas a subir hoy?
               </h2>
@@ -325,7 +325,7 @@ export default function App() {
             </div>
 
             <div className="space-y-3 mt-4">
-              
+
               {/* Botón 1: Tomar Foto (Azul metalizado globo) */}
               <button
                 onClick={() => photoInputRef.current?.click()}
@@ -367,20 +367,20 @@ export default function App() {
         {status === 'preview' && (
           <section className="flex-1 flex flex-col justify-between animate-fade-in" id="section-preview">
             <div className="space-y-4">
-              
+
               {/* Contenedor Polaroid-style (Efecto hover polaroid y balanceo interactivo) */}
               <div className="bg-white p-3.5 pb-8 rounded shadow-xl rotate-[-1deg] mx-auto max-w-[300px] border border-slate-100 polaroid-frame">
                 <div className="aspect-[4/3] bg-slate-100 rounded overflow-hidden relative border border-slate-200/60 flex items-center justify-center">
                   {fileCategory === 'image' ? (
-                    <img 
-                      src={imagePreview} 
-                      alt="Previsualización" 
+                    <img
+                      src={imagePreview}
+                      alt="Previsualización"
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <video 
-                      src={imagePreview} 
-                      controls 
+                    <video
+                      src={imagePreview}
+                      controls
                       className="w-full h-full object-cover"
                       playsInline
                     />
@@ -399,8 +399,8 @@ export default function App() {
                   <User className="w-3.5 h-3.5 text-invitation-blueDark" />
                   <span>Tu nombre o firma</span>
                 </label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
                   placeholder="Ej: Santi, Tía Inés, Los primos..."
@@ -459,7 +459,7 @@ export default function App() {
             <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mt-6 border border-invitation-gray/50 max-w-[240px]">
               <div className="h-full bg-gradient-to-r from-invitation-blue to-invitation-blueDark w-[80%] rounded-full"></div>
             </div>
-            
+
             <p className="text-[10px] text-slate-400 mt-3 font-sans">
               No cierres la página web ni bloquees tu celular.
             </p>
@@ -486,7 +486,7 @@ export default function App() {
             >
               📸 Subir otro recuerdo
             </button>
-            
+
             <p className="text-[10px] text-slate-400 mt-6 font-sans">
               Volviendo al inicio en unos segundos automáticamente...
             </p>
@@ -512,7 +512,7 @@ export default function App() {
               >
                 🔄 Reintentar subir
               </button>
-              
+
               <button
                 onClick={resetApp}
                 className="w-full py-2.5 px-6 rounded-xl bg-invitation-paper hover:bg-slate-50 text-slate-500 font-semibold text-xs border border-invitation-gray transition-all shadow-sm btn-shimmer"
