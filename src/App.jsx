@@ -202,7 +202,6 @@ export default function App() {
     setStatus('success');
     
     // Disparar confeti con la paleta de colores de la invitación
-    // Azul metálico, plata, blanco y oro suave de la disco ball
     const duration = 3.5 * 1000;
     const end = Date.now() + duration;
 
@@ -256,19 +255,19 @@ export default function App() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-4 safe-padding-bottom">
       
-      {/* Elementos Decorativos Flotantes de la Invitación (Globos / Estrellas / Disco) */}
-      <div className="absolute top-12 left-8 text-4xl select-none pointer-events-none opacity-40 animate-float">🪩</div>
-      <div className="absolute bottom-16 right-8 text-4xl select-none pointer-events-none opacity-30 animate-float" style={{ animationDelay: '2s' }}>✨</div>
-      <div className="absolute top-1/4 right-10 text-3xl select-none pointer-events-none opacity-20 animate-float" style={{ animationDelay: '3.5s' }}>💙</div>
-      <div className="absolute bottom-1/4 left-10 text-3xl select-none pointer-events-none opacity-25 animate-float" style={{ animationDelay: '1s' }}>🎈</div>
+      {/* Elementos Decorativos Flotantes de la Invitación (Sway suave) */}
+      <div className="absolute top-12 left-8 text-4xl select-none pointer-events-none opacity-40 animate-sway">🪩</div>
+      <div className="absolute bottom-16 right-8 text-4xl select-none pointer-events-none opacity-30 animate-sway" style={{ animationDelay: '2s' }}>✨</div>
+      <div className="absolute top-1/4 right-10 text-3xl select-none pointer-events-none opacity-20 animate-sway" style={{ animationDelay: '3.5s' }}>💙</div>
+      <div className="absolute bottom-1/4 left-10 text-3xl select-none pointer-events-none opacity-25 animate-sway" style={{ animationDelay: '1s' }}>🎈</div>
 
-      {/* Tarjeta de Invitación Premium (paper-card) */}
+      {/* Tarjeta de Invitación Premium (paper-card con animación de entrada fadeInUp) */}
       <div className="w-full max-w-md paper-card rounded-2xl p-6 md:p-8 flex flex-col relative overflow-hidden transition-all duration-300">
         
         {/* Borde sutil superior en degradado de azul metalizado y plata */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-invitation-blue via-invitation-silver to-invitation-blueDark"></div>
 
-        {/* Titular Principal / Header (Estilo "I'M TURNING 21" + "Cumple Caro") */}
+        {/* Titular Principal / Header */}
         <header className="text-center mb-6 flex flex-col items-center">
           <div className="flex items-center justify-center space-x-1 bg-invitation-blueLight/60 px-4 py-1 rounded-full border border-invitation-blue/30 mb-3.5">
             <span className="text-[10px] font-bold tracking-widest uppercase text-invitation-blueDark font-sans">
@@ -303,9 +302,9 @@ export default function App() {
           </p>
         </header>
 
-        {/* --- ESTADO: IDLE (Pantalla de Bienvenida con Botones Estilo Invitación) --- */}
+        {/* --- ESTADO: IDLE (Pantalla de Bienvenida con Botones Estilo Invitación y Transición animate-fade-in) --- */}
         {status === 'idle' && (
-          <section className="flex-1 flex flex-col justify-between" id="section-idle">
+          <section className="flex-1 flex flex-col justify-between animate-fade-in" id="section-idle">
             
             {/* Ilustración de Disco Ball y Notas */}
             <div className="flex flex-col items-center text-center my-4 py-5 px-4 rounded-xl bg-invitation-blueLight/20 border border-invitation-blue/20 relative">
@@ -314,7 +313,7 @@ export default function App() {
               <div className="absolute -top-3 w-20 h-5 tape-decor"></div>
               
               <div className="w-16 h-16 rounded-full bg-invitation-blueLight/50 flex items-center justify-center shadow-blue-balloon mb-3.5">
-                <Camera className="w-8 h-8 text-invitation-blueDark" />
+                <Camera className="w-8 h-8 text-invitation-blueDark animate-pulse" style={{ animationDuration: '3s' }} />
               </div>
               
               <h2 className="font-handwritten text-2xl font-bold text-invitation-charcoal mb-1">
@@ -330,25 +329,25 @@ export default function App() {
               {/* Botón 1: Tomar Foto (Azul metalizado globo) */}
               <button
                 onClick={() => photoInputRef.current?.click()}
-                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-invitation-blue to-invitation-blueDark hover:from-[#A8CDEE] hover:to-[#7499B7] text-white font-bold text-base shadow-blue-balloon hover:shadow-blue-balloon-hover active:scale-[0.98] transition-all duration-300 flex items-center justify-center space-x-2.5"
+                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-invitation-blue to-invitation-blueDark hover:from-[#A8CDEE] hover:to-[#7499B7] text-white font-bold text-base shadow-blue-balloon hover:scale-[1.015] active:scale-[0.98] transition-all duration-300 flex items-center justify-center space-x-2.5 btn-shimmer"
               >
-                <Camera className="w-5 h-5" />
+                <Camera className="w-5 h-5 animate-bounce" style={{ animationDuration: '2s' }} />
                 <span>📸 Tomar Foto</span>
               </button>
 
               {/* Botón 2: Grabar Video (Champán / Oro suave retro) */}
               <button
                 onClick={() => videoInputRef.current?.click()}
-                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-[#DCD3C4] to-[#B8AD99] hover:from-[#E4DCCE] hover:to-[#C2B7A3] text-invitation-charcoal font-bold text-base shadow-md active:scale-[0.98] transition-all duration-300 flex items-center justify-center space-x-2.5"
+                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-[#DCD3C4] to-[#B8AD99] hover:from-[#E4DCCE] hover:to-[#C2B7A3] text-invitation-charcoal font-bold text-base shadow-md hover:scale-[1.015] active:scale-[0.98] transition-all duration-300 flex items-center justify-center space-x-2.5 btn-shimmer"
               >
-                <VideoIcon className="w-5 h-5 text-invitation-charcoal" />
+                <VideoIcon className="w-5 h-5 text-invitation-charcoal animate-pulse" />
                 <span>🎥 Grabar Video</span>
               </button>
 
               {/* Botón 3: Seleccionar de la Galería (Blanco papel con borde gris) */}
               <button
                 onClick={() => galleryInputRef.current?.click()}
-                className="w-full py-3 px-6 rounded-xl bg-invitation-paper border border-invitation-gray hover:border-invitation-blueDark text-invitation-charcoal font-semibold text-sm active:scale-[0.98] transition-all duration-200 flex items-center justify-center space-x-2 shadow-sm"
+                className="w-full py-3 px-6 rounded-xl bg-invitation-paper border border-invitation-gray hover:border-invitation-blueDark hover:scale-[1.015] text-invitation-charcoal font-semibold text-sm active:scale-[0.98] transition-all duration-200 flex items-center justify-center space-x-2 shadow-sm btn-shimmer"
               >
                 <ImageIcon className="w-4 h-4 text-invitation-blueDark" />
                 <span>🖼️ Elegir de la Galería</span>
@@ -364,12 +363,12 @@ export default function App() {
           </section>
         )}
 
-        {/* --- ESTADO: PREVIEW (Previsualización polaroid de la Foto/Video) --- */}
+        {/* --- ESTADO: PREVIEW (Previsualización polaroid de la Foto/Video con Transición animate-fade-in) --- */}
         {status === 'preview' && (
-          <section className="flex-1 flex flex-col justify-between" id="section-preview">
+          <section className="flex-1 flex flex-col justify-between animate-fade-in" id="section-preview">
             <div className="space-y-4">
               
-              {/* Contenedor Polaroid-style para la imagen o video (fondo blanco papel con sombra) */}
+              {/* Contenedor Polaroid-style (Efecto hover polaroid y balanceo interactivo) */}
               <div className="bg-white p-3.5 pb-8 rounded shadow-xl rotate-[-1deg] mx-auto max-w-[300px] border border-slate-100 polaroid-frame">
                 <div className="aspect-[4/3] bg-slate-100 rounded overflow-hidden relative border border-slate-200/60 flex items-center justify-center">
                   {fileCategory === 'image' ? (
@@ -388,14 +387,13 @@ export default function App() {
                   )}
                 </div>
                 <div className="mt-4 flex flex-col items-center">
-                  {/* Etiqueta simulada a mano */}
                   <span className="font-handwritten text-lg text-slate-600">
                     {fileCategory === 'video' ? '🎬 Mi Video' : '📸 Mi Recuerdo'}
                   </span>
                 </div>
               </div>
 
-              {/* Input para el Nombre del Invitado (diseño crema sutil) */}
+              {/* Input para el Nombre del Invitado */}
               <div className="bg-invitation-blueLight/10 p-4 rounded-xl border border-invitation-gray space-y-2 mt-2">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1.5 font-sans">
                   <User className="w-3.5 h-3.5 text-invitation-blueDark" />
@@ -417,7 +415,7 @@ export default function App() {
             <div className="flex flex-col space-y-2.5 mt-5">
               <button
                 onClick={uploadPhoto}
-                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold text-base shadow-md active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
+                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 hover:scale-[1.015] text-white font-bold text-base shadow-md active:scale-[0.98] transition-all flex items-center justify-center space-x-2 btn-shimmer"
               >
                 <Upload className="w-5 h-5" />
                 <span>🚀 Compartir en el Álbum</span>
@@ -425,7 +423,7 @@ export default function App() {
 
               <button
                 onClick={resetApp}
-                className="w-full py-2.5 px-6 rounded-xl bg-invitation-paper hover:bg-slate-50 text-slate-500 font-semibold text-xs border border-invitation-gray active:scale-[0.98] transition-all flex items-center justify-center space-x-1.5 shadow-sm"
+                className="w-full py-2.5 px-6 rounded-xl bg-invitation-paper hover:bg-slate-50 text-slate-500 font-semibold text-xs border border-invitation-gray active:scale-[0.98] transition-all flex items-center justify-center space-x-1.5 shadow-sm btn-shimmer"
               >
                 <RefreshCw className="w-3 h-3" />
                 <span>Elegir otro archivo</span>
@@ -434,9 +432,9 @@ export default function App() {
           </section>
         )}
 
-        {/* --- ESTADO: UPLOADING (Cargando) --- */}
+        {/* --- ESTADO: UPLOADING (Cargando con Transición animate-fade-in) --- */}
         {status === 'uploading' && (
-          <section className="flex-1 flex flex-col items-center justify-center py-10" id="section-uploading">
+          <section className="flex-1 flex flex-col items-center justify-center py-10 animate-fade-in" id="section-uploading">
             <div className="relative mb-6">
               {/* Spinner animado circular */}
               <div className="w-20 h-20 rounded-full border-4 border-slate-100 border-t-invitation-blueDark animate-spin"></div>
@@ -468,9 +466,9 @@ export default function App() {
           </section>
         )}
 
-        {/* --- ESTADO: SUCCESS (Subida Exitosa) --- */}
+        {/* --- ESTADO: SUCCESS (Subida Exitosa con Transición animate-fade-in) --- */}
         {status === 'success' && (
-          <section className="flex-1 flex flex-col items-center text-center py-6" id="section-success">
+          <section className="flex-1 flex flex-col items-center text-center py-6 animate-fade-in" id="section-success">
             <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 mb-5 animate-bounce">
               <CheckCircle2 className="w-10 h-10" />
             </div>
@@ -484,7 +482,7 @@ export default function App() {
 
             <button
               onClick={resetApp}
-              className="py-3 px-8 rounded-xl bg-gradient-to-r from-invitation-blue to-invitation-blueDark hover:shadow-blue-balloon text-white font-bold text-sm shadow-md transition-all active:scale-[0.98]"
+              className="py-3 px-8 rounded-xl bg-gradient-to-r from-invitation-blue to-invitation-blueDark hover:shadow-blue-balloon text-white font-bold text-sm shadow-md transition-all active:scale-[0.98] btn-shimmer"
             >
               📸 Subir otro recuerdo
             </button>
@@ -495,9 +493,9 @@ export default function App() {
           </section>
         )}
 
-        {/* --- ESTADO: ERROR (Pantalla de Error) --- */}
+        {/* --- ESTADO: ERROR (Pantalla de Error con Transición animate-fade-in) --- */}
         {status === 'error' && (
-          <section className="flex-1 flex flex-col items-center text-center py-6" id="section-error">
+          <section className="flex-1 flex flex-col items-center text-center py-6 animate-fade-in" id="section-error">
             <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 mb-5 animate-pulse">
               <AlertTriangle className="w-10 h-10" />
             </div>
@@ -510,14 +508,14 @@ export default function App() {
             <div className="flex flex-col w-full space-y-2">
               <button
                 onClick={uploadPhoto}
-                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-invitation-blue to-invitation-blueDark text-white font-bold text-sm shadow-md transition-all active:scale-[0.98]"
+                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-invitation-blue to-invitation-blueDark text-white font-bold text-sm shadow-md transition-all active:scale-[0.98] btn-shimmer"
               >
                 🔄 Reintentar subir
               </button>
               
               <button
                 onClick={resetApp}
-                className="w-full py-2.5 px-6 rounded-xl bg-invitation-paper hover:bg-slate-50 text-slate-500 font-semibold text-xs border border-invitation-gray transition-all shadow-sm"
+                className="w-full py-2.5 px-6 rounded-xl bg-invitation-paper hover:bg-slate-50 text-slate-500 font-semibold text-xs border border-invitation-gray transition-all shadow-sm btn-shimmer"
               >
                 Volver al inicio
               </button>
