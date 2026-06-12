@@ -2,10 +2,10 @@
 // CONFIGURACIÓN DEL SCRIPT DE GOOGLE
 // ==========================================
 
-// 1. REEMPLAZA esta cadena con el ID de tu carpeta de Google Drive.
-// Puedes obtener el ID desde la URL de la carpeta. Ejemplo:
-// Si la URL es: https://drive.google.com/drive/folders/1aBcDeFgHiJkLmNoPqRsTuVwXyZ
-// El ID es: "1aBcDeFgHiJkLmNoPqRsTuVwXyZ"
+// 1. REEMPLAZA esta cadena con el ID o la URL completa de tu carpeta de Google Drive.
+// Ejemplos aceptados:
+// - ID directo: "1XioTmhMIgs_yrrW03bXq5J5Ptx14rphj"
+// - URL completa: "https://drive.google.com/drive/folders/1XioTmhMIgs_yrrW03bXq5J5Ptx14rphj?usp=sharing"
 var FOLDER_ID = "REEMPLAZA_CON_EL_ID_DE_TU_CARPETA_DE_DRIVE";
 
 /**
@@ -13,18 +13,10 @@ var FOLDER_ID = "REEMPLAZA_CON_EL_ID_DE_TU_CARPETA_DE_DRIVE";
  * Recibe el JSON con la imagen en base64 y la guarda en Google Drive.
  */
 function doPost(e) {
-  // Configuración de cabeceras para permitir CORS
-  var headers = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Access-Control-Max-Age": "86400"
-  };
-
   try {
     // 1. Validar que la petición contenga datos
     if (!e || !e.postData || !e.postData.contents) {
-      return errorResponse("No se enviaron datos en la petición.", headers);
+      return errorResponse("No se enviaron datos en la petición.");
     }
 
     // 2. Parsear el cuerpo JSON de la petición
@@ -36,12 +28,24 @@ function doPost(e) {
 
     // 3. Validar los parámetros requeridos
     if (!base64Data) {
-      return errorResponse("Falta el contenido de la imagen (base64).", headers);
+      return errorResponse("Falta el contenido de la imagen (base64).");
     }
 
     // 4. Validar que se haya modificado la constante del ID
     if (FOLDER_ID === "REEMPLAZA_CON_EL_ID_DE_TU_CARPETA_DE_DRIVE" || !FOLDER_ID) {
-      return errorResponse("Configuración incompleta: FOLDER_ID no configurado en Google Apps Script.", headers);
+      return errorResponse("Configuración incompleta: FOLDER_ID no configurado en Google Apps Script.");
+    }
+
+    // Limpieza automática del ID si el usuario ingresó la URL completa
+    var cleanFolderId = FOLDER_ID.trim();
+    if (cleanFolderId.indexOf("drive.google.com") !== -1) {
+      var parts = cleanFolderId.split("/");
+      for (var i = 0; i < parts.length; i++) {
+        if (parts[i] === "folders" && i + 1 < parts.length) {
+          cleanFolderId = parts[i + 1].split("?")[0].split("#")[0];
+          break;
+        }
+      }
     }
 
     // 5. Decodificar la imagen de Base64 a bytes
@@ -51,7 +55,7 @@ function doPost(e) {
     var blob = Utilities.newBlob(decodedBytes, mimeType, fileName);
 
     // 7. Acceder a la carpeta de Google Drive e insertar el archivo
-    var folder = DriveApp.getFolderById(FOLDER_ID);
+    var folder = DriveApp.getFolderById(cleanFolderId);
     var file = folder.createFile(blob);
 
     // 8. Opcional: Agregar el nombre del invitado como descripción del archivo
@@ -66,14 +70,15 @@ function doPost(e) {
       guestName: guestName
     };
 
+    // Google Apps Script maneja automáticamente CORS cuando se hace la redirección
+    // y se retorna como JSON. No se requiere ni existe .setHeaders()
     return ContentService.createTextOutput(JSON.stringify(jsonResponse))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeaders(headers); // Agregar cabeceras CORS
+      .setMimeType(ContentService.MimeType.JSON);
 
   } catch (err) {
     // Manejo de errores y respuesta con el detalle del fallo
     Logger.log("Error: " + err.toString());
-    return errorResponse("Error en el servidor de Google: " + err.toString(), headers);
+    return errorResponse("Error en el servidor de Google: " + err.toString());
   }
 }
 
@@ -81,26 +86,18 @@ function doPost(e) {
  * Función para gestionar la respuesta de preflight OPTIONS (CORS) si se requiere
  */
 function doOptions(e) {
-  var headers = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Access-Control-Max-Age": "86400"
-  };
   return ContentService.createTextOutput("")
-    .setMimeType(ContentService.MimeType.TEXT)
-    .setHeaders(headers);
+    .setMimeType(ContentService.MimeType.TEXT);
 }
 
 /**
- * Función auxiliar para estructurar respuestas de error homogéneas
+ * Helper para estructurar respuestas de error en JSON sin llamadas a setHeaders
  */
-function errorResponse(message, headers) {
+function errorResponse(message) {
   var errorObj = {
     status: "error",
     message: message
   };
   return ContentService.createTextOutput(JSON.stringify(errorObj))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeaders(headers);
+    .setMimeType(ContentService.MimeType.JSON);
 }

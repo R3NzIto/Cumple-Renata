@@ -1,7 +1,7 @@
 // Configuración de la aplicación
 export const CONFIG = {
   // Reemplaza esta URL con la URL de ejecución que obtengas al implementar tu Google Apps Script como Web App
-  API_URL: "TU_GOOGLE_APPS_SCRIPT_URL_AQUI",
+  API_URL: "https://script.google.com/macros/s/AKfycbw-uMfIs43LPXiGIFXq1audst2bdoM0aAWeYqvP0Yzu5ksmqhkBdjfeIIFNcqOAHE4q/exec",
   
   // Opcional: Nombre del evento para personalizar textos en pantalla
   EVENT_NAME: "Cumple Caro",
