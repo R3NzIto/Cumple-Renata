@@ -22,6 +22,7 @@ function doPost(e) {
     var fileName = data.name || "foto_cumple.jpg";
     var mimeType = data.mimeType || "image/jpeg";
     var guestName = data.guestName || "Anónimo";
+    var message = data.message || "";
 
     // 3. Validar los parámetros requeridos
     if (!base64Data) {
@@ -55,8 +56,13 @@ function doPost(e) {
     var folder = DriveApp.getFolderById(cleanFolderId);
     var file = folder.createFile(blob);
 
-    // 8. Opcional: Agregar el nombre del invitado como descripción del archivo
-    file.setDescription("Foto subida por el invitado: " + guestName + "\nFecha de carga: " + new Date().toLocaleString());
+    // 8. Opcional: Agregar el nombre del invitado y su mensaje como descripción del archivo
+    var descriptionText = "Foto subida por el invitado: " + guestName;
+    if (message) {
+      descriptionText += "\nMensaje: " + message;
+    }
+    descriptionText += "\nFecha de carga: " + new Date().toLocaleString();
+    file.setDescription(descriptionText);
 
     // 9. Devolver respuesta exitosa en JSON
     var jsonResponse = {

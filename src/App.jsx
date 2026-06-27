@@ -8,6 +8,7 @@ import {
   Heart, 
   Sparkles, 
   User, 
+  MessageSquare,
   Image as ImageIcon,
   Video as VideoIcon
 } from 'lucide-react';
@@ -22,6 +23,7 @@ export default function App() {
   const [fileCategory, setFileCategory] = useState('image'); // 'image' o 'video' (usado para la interfaz)
   const [loadingMessage, setLoadingMessage] = useState('Procesando archivo...');
   const [errorMessage, setErrorMessage] = useState('');
+  const [messageText, setMessageText] = useState('');
   
   // Refs independientes para cada acción de carga
   const photoInputRef = useRef(null);
@@ -108,6 +110,16 @@ export default function App() {
       return match[1].split("\n")[0].trim();
     }
     return "Anónimo";
+  };
+
+  // Helper para extraer el mensaje de la descripción del archivo
+  const extractMessage = (description) => {
+    if (!description) return "";
+    const match = description.match(/Mensaje:\s*(.*)/i);
+    if (match && match[1]) {
+      return match[1].split("\n")[0].trim();
+    }
+    return "";
   };
 
   const renderLiveWall = () => {
@@ -227,8 +239,13 @@ export default function App() {
                           )}
                         </div>
                         {/* Texto de firma Polaroid */}
-                        <div className="absolute bottom-3 left-0 right-0 text-center">
-                          <span className="font-handwritten text-2xl md:text-3xl text-slate-700 block truncate px-6">
+                        <div className="absolute bottom-2 left-0 right-0 text-center px-4 flex flex-col justify-center items-center">
+                          {extractMessage(file.description) && (
+                            <p className="font-handwritten text-base md:text-lg text-slate-500 italic max-w-full truncate mb-0.5">
+                              "{extractMessage(file.description)}"
+                            </p>
+                          )}
+                          <span className="font-handwritten text-xl md:text-2xl text-slate-700 font-bold block truncate">
                             📸 {extractGuestName(file.description)}
                           </span>
                         </div>
@@ -454,7 +471,8 @@ export default function App() {
           name: fileName,
           mimeType: mimeType,
           base64: base64Data,
-          guestName: guestName.trim() || 'Anónimo'
+          guestName: guestName.trim() || 'Anónimo',
+          message: messageText.trim()
         };
 
         if (!CONFIG.API_URL || CONFIG.API_URL === "TU_GOOGLE_APPS_SCRIPT_URL_AQUI") {
@@ -536,6 +554,7 @@ export default function App() {
     
     setUploadQueue([]);
     setErrorMessage('');
+    setMessageText('');
     
     // Limpiar los inputs
     if (photoInputRef.current) photoInputRef.current.value = "";
@@ -770,6 +789,22 @@ export default function App() {
                   placeholder="Ej: Santi, Tía Inés, Los primos..."
                   maxLength={40}
                   className="w-full bg-[#FAF8F5] border border-invitation-gray rounded-lg px-3.5 py-2.5 text-sm text-invitation-charcoal placeholder-slate-400 focus:outline-none focus:border-invitation-blueDark focus:ring-1 focus:ring-invitation-blueDark/40 transition-all duration-200"
+                />
+              </div>
+
+              {/* Input para el Mensaje / Dedicatoria Opcional */}
+              <div className="bg-invitation-blueLight/10 p-4 rounded-xl border border-invitation-gray space-y-2 mt-2">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1.5 font-sans">
+                  <MessageSquare className="w-3.5 h-3.5 text-invitation-blueDark" />
+                  <span>Mensaje o Dedicatoria (Opcional)</span>
+                </label>
+                <textarea 
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  placeholder="Escribí una dedicatoria o saludo..."
+                  maxLength={80}
+                  rows={2}
+                  className="w-full bg-[#FAF8F5] border border-invitation-gray rounded-lg px-3.5 py-2.5 text-sm text-invitation-charcoal placeholder-slate-400 focus:outline-none focus:border-invitation-blueDark focus:ring-1 focus:ring-invitation-blueDark/40 transition-all duration-200 resize-none font-sans"
                 />
               </div>
 
