@@ -1,11 +1,11 @@
 // Configuración de la aplicación
 export const CONFIG = {
   // Reemplaza esta URL con la URL de ejecución que obtengas al implementar tu Google Apps Script como Web App
-  API_URL: "https://script.google.com/macros/s/AKfycbw-uMfIs43LPXiGIFXq1audst2bdoM0aAWeYqvP0Yzu5ksmqhkBdjfeIIFNcqOAHE4q/exec",
-  
+  API_URL: "https://script.google.com/macros/s/AKfycbyncu-LY69ZmR0L5ObdJrzD29ag6x1ba52bg1o4MLbGtg4CBZ1PkBpA9yKH3-FmqE3f/exec",
+
   // Opcional: Nombre del evento para personalizar textos en pantalla
   EVENT_NAME: "Mis 15 Renata",
-  
+
   // URL de la carpeta compartida en Google Drive en modo Lector ("Cualquiera con el enlace puede ver")
   // para que los invitados puedan ver las fotos y videos subidos.
   SHARED_ALBUM_URL: "https://drive.google.com/drive/folders/143fCGD6IPnuQC2ux1epL0DjWlf0tDcCg?usp=sharing",
