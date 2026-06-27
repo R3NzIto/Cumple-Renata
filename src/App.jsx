@@ -503,14 +503,14 @@ export default function App() {
         angle: 60,
         spread: 60,
         origin: { x: 0 },
-        colors: ['#A1C6EA', '#E1E7EC', '#6D92B0', '#FAF8F5', '#FFD700']
+        colors: ['#1E3A8A', '#E2E8F0', '#0F172A', '#CBD5E1', '#FFD700']
       });
       confetti({
         particleCount: 4,
         angle: 120,
         spread: 60,
         origin: { x: 1 },
-        colors: ['#A1C6EA', '#E1E7EC', '#6D92B0', '#FAF8F5', '#FFD700']
+        colors: ['#1E3A8A', '#E2E8F0', '#0F172A', '#CBD5E1', '#FFD700']
       });
 
       if (Date.now() < end) {
