@@ -154,10 +154,10 @@ export default function App() {
             </div>
             <div className="space-y-2 max-w-[280px]">
               <h2 className="text-lg font-bold text-invitation-charcoal">
-                📸 ¡Compartí tu foto o video!
+                📸 ¡Compartí tu foto!
               </h2>
               <p className="text-xs text-slate-500 leading-relaxed">
-                Escaneá el código QR con tu celular y subí tus recuerdos para que aparezcan en pantalla al instante.
+                Escaneá el código QR con tu celular y subí tus fotos para que aparezcan en pantalla al instante.
               </p>
             </div>
           </div>
@@ -165,10 +165,10 @@ export default function App() {
           {/* Contador / Footer */}
           <div className="w-full text-center mb-2 space-y-1">
             <div className="text-xs font-semibold text-slate-400">
-              Total: {screenFiles.length} {screenFiles.length === 1 ? 'recuerdo subido' : 'recuerdos subidos'}
+              Total: {screenFiles.length} {screenFiles.length === 1 ? 'foto subida' : 'fotos subidas'}
             </div>
             <div className="text-[10px] text-slate-400 font-sans italic">
-              ¡A celebrar juntos! 💖
+              ¡A celebrar junto a Renata! 💖
             </div>
           </div>
         </section>
@@ -182,10 +182,10 @@ export default function App() {
                 <Camera className="w-10 h-10 text-invitation-blueDark" />
               </div>
               <h3 className="text-xl font-handwritten font-bold text-invitation-charcoal">
-                Esperando recuerdos...
+                Esperando fotos...
               </h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                ¡Escaneá el QR y sé el primero en subir una foto o video para inaugurar el muro de recuerdos!
+                ¡Escaneá el QR y sé el primero en subir una foto para inaugurar el muro de recuerdos!
               </p>
             </div>
           ) : (
@@ -298,6 +298,11 @@ export default function App() {
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
+
+    if (files.length > 3) {
+      showError("Puedes seleccionar un máximo de 3 fotos a la vez.");
+      return;
+    }
 
     const newQueue = [];
     const errors = [];
@@ -608,7 +613,7 @@ export default function App() {
           </div>
           
           <p className="text-xs font-sans text-slate-500 italic max-w-[280px]">
-            Comparti tu momento divertido con la cumplañera
+            Compartí tu momento divertido con Renata
           </p>
         </header>
 
@@ -627,7 +632,7 @@ export default function App() {
                 ¿Qué vas a subir hoy?
               </h2>
               <p className="text-xs text-slate-500 max-w-[240px] leading-relaxed">
-                Toma fotos/videos en vivo o selecciona varios archivos de tu galería para subirlos juntos.
+                Toma fotos en vivo o selecciona hasta 3 fotos de tu galería para compartirlas juntas.
               </p>
             </div>
 
@@ -648,7 +653,7 @@ export default function App() {
                 className="w-full py-3 px-6 rounded-xl bg-invitation-paper border border-invitation-gray hover:border-invitation-blueDark hover:scale-[1.015] text-invitation-charcoal font-semibold text-sm active:scale-[0.98] transition-all duration-200 flex items-center justify-center space-x-2 shadow-sm btn-shimmer"
               >
                 <ImageIcon className="w-4 h-4 text-invitation-blueDark" />
-                <span>🖼️ Elegir de la Galería (Varios)</span>
+                <span>🖼️ Elegir de la Galería (Máx. 3)</span>
               </button>
 
               {/* Divisor & Botón para ver el Álbum */}
