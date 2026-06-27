@@ -304,17 +304,14 @@ export default function App() {
 
     files.forEach((file, index) => {
       const isImage = file.type.startsWith('image/');
-      const isVideo = file.type.startsWith('video/');
 
-      if (!isImage && !isVideo) {
-        errors.push(`"${file.name}" no es una foto o video válido.`);
+      if (!isImage) {
+        errors.push(`"${file.name}" no es una foto válida.`);
         return;
       }
 
       // Validar el tamaño del archivo
-      // 35MB máximo para videos (límite de 50MB en el POST de Google Apps Script)
-      const isItemVideo = isVideo;
-      const maxMB = isItemVideo ? 35 : CONFIG.MAX_FILE_SIZE_MB;
+      const maxMB = CONFIG.MAX_FILE_SIZE_MB;
       const fileSizeMB = file.size / (1024 * 1024);
       
       if (fileSizeMB > maxMB) {
@@ -325,7 +322,7 @@ export default function App() {
       newQueue.push({
         id: `${Date.now()}-${index}-${Math.random().toString(36).substr(2, 5)}`,
         file: file,
-        category: isImage ? 'image' : 'video',
+        category: 'image',
         previewUrl: URL.createObjectURL(file), // Genera una URL local para la preview (evita crashes de memoria)
         status: 'pending',
         error: ''
@@ -645,15 +642,6 @@ export default function App() {
                 <span>📸 Tomar Foto</span>
               </button>
 
-              {/* Botón 2: Grabar Video (Champán) */}
-              <button
-                onClick={() => videoInputRef.current?.click()}
-                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-[#DCD3C4] to-[#B8AD99] hover:from-[#E4DCCE] hover:to-[#C2B7A3] text-invitation-charcoal font-bold text-base shadow-md hover:scale-[1.015] active:scale-[0.98] transition-all duration-300 flex items-center justify-center space-x-2.5 btn-shimmer"
-              >
-                <VideoIcon className="w-5 h-5 text-invitation-charcoal animate-pulse" />
-                <span>🎥 Grabar Video</span>
-              </button>
-
               {/* Botón 3: Cargar desde Galería (Múltiple) */}
               <button
                 onClick={() => galleryInputRef.current?.click()}
@@ -926,20 +914,10 @@ export default function App() {
           style={hiddenInputStyle}
         />
 
-        {/* Input Oculto de Captura Directa de Video (Video Camera) */}
-        <input
-          type="file"
-          accept="video/*"
-          capture="environment"
-          ref={videoInputRef}
-          onChange={handleFileChange}
-          style={hiddenInputStyle}
-        />
-
         {/* Input Oculto para Carga desde Galería/Archivos (Múltiple) */}
         <input
           type="file"
-          accept="image/*,video/*"
+          accept="image/*"
           multiple
           ref={galleryInputRef}
           onChange={handleFileChange}
