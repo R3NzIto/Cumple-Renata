@@ -222,7 +222,7 @@ export default function App() {
                           : 'opacity-0 scale-95 rotate-[-3deg] translate-y-8 pointer-events-none z-0'
                       }`}
                     >
-                      <div className="bg-white p-4 pb-14 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1),_0_0_20px_rgba(30,58,138,0.05)] border border-slate-200/60 max-h-full max-w-full flex flex-col justify-center polaroid-frame relative">
+                      <div className="bg-white p-4 pb-20 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1),_0_0_20px_rgba(30,58,138,0.05)] border border-slate-200/60 max-h-full max-w-full flex flex-col justify-center polaroid-frame relative">
                         <div className="max-h-[58vh] overflow-hidden rounded flex items-center justify-center bg-slate-50 border border-slate-100">
                           {isActive && (
                             <img 
@@ -239,13 +239,13 @@ export default function App() {
                           )}
                         </div>
                         {/* Texto de firma Polaroid */}
-                        <div className="absolute bottom-2 left-0 right-0 text-center px-4 flex flex-col justify-center items-center">
+                        <div className="absolute bottom-3 left-0 right-0 text-center px-4 flex flex-col justify-center items-center">
                           {extractMessage(file.description) && (
-                            <p className="font-handwritten text-base md:text-lg text-slate-500 italic max-w-full truncate mb-0.5">
-                              "{extractMessage(file.description)}"
+                            <p className="font-handwritten text-lg md:text-xl text-slate-500 italic max-w-[90%] break-words leading-tight mb-1">
+                              “{extractMessage(file.description)}”
                             </p>
                           )}
-                          <span className="font-handwritten text-xl md:text-2xl text-slate-700 font-bold block truncate">
+                          <span className="font-handwritten text-2xl md:text-3xl text-slate-700 font-bold block max-w-[90%] truncate">
                             📸 {extractGuestName(file.description)}
                           </span>
                         </div>
