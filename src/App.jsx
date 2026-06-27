@@ -239,15 +239,12 @@ export default function App() {
                           )}
                         </div>
                         {/* Texto de firma Polaroid */}
-                        <div className="absolute bottom-3 left-0 right-0 text-center px-4 flex flex-col justify-center items-center">
+                        <div className="absolute bottom-5 left-0 right-0 text-center px-4 flex flex-col justify-center items-center">
                           {extractMessage(file.description) && (
-                            <p className="font-handwritten text-lg md:text-xl text-slate-500 italic max-w-[90%] break-words leading-tight mb-1">
+                            <p className="font-handwritten text-xl md:text-2xl text-slate-700 italic max-w-[90%] break-words leading-tight">
                               “{extractMessage(file.description)}”
                             </p>
                           )}
-                          <span className="font-handwritten text-2xl md:text-3xl text-slate-700 font-bold block max-w-[90%] truncate">
-                            📸 {extractGuestName(file.description)}
-                          </span>
                         </div>
                       </div>
                     </div>
