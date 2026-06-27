@@ -8,14 +8,14 @@ export default {
     extend: {
       colors: {
         invitation: {
-          cream: '#FAF8F5',       // Warm textured paper cream
-          paper: '#FFFDFB',       // Pure white paper card
-          blue: '#A1C6EA',        // Soft baby/metallic blue balloon color
-          blueDark: '#6D92B0',    // Darker steel blue for text/buttons
-          blueLight: '#D9E8F5',   // Very soft blue tint
-          charcoal: '#2D2B2A',    // Script text soft charcoal/black
-          gray: '#EBE7DF',        // Ripped paper shadow/border gray
-          silver: '#E1E7EC',      // Disco ball silver
+          cream: '#F1F5F9',       // Gris plateado muy suave para fondo
+          paper: '#FFFFFF',       // Blanco puro para las tarjetas
+          blue: '#1E3A8A',        // Azul marino medio (royal/navy) para acentos y botones
+          blueDark: '#0F172A',    // Azul marino profundo (casi negro) para textos principales
+          blueLight: '#E2E8F0',   // Gris plateado muy claro para fondos de inputs
+          charcoal: '#1E293B',    // Azul pizarra oscuro para textos secundarios
+          gray: '#CBD5E1',        // Gris plateado de bordes
+          silver: '#94A3B8',      // Plateado metálico
         }
       },
       fontFamily: {

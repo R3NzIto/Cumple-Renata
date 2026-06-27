@@ -28,13 +28,256 @@ export default function App() {
   const videoInputRef = useRef(null);
   const galleryInputRef = useRef(null);
 
+  // Estados para el Muro en Vivo (Live Wall)
+  const [isScreenMode, setIsScreenMode] = useState(false);
+  const [screenFiles, setScreenFiles] = useState([]);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [isFetchingScreen, setIsFetchingScreen] = useState(false);
+  const [isPlayingVideo, setIsPlayingVideo] = useState(false);
+  
+  const transitionTimerRef = useRef(null);
+
+  // Detectar si está en modo pantalla
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('pantalla') === 'true' || params.get('view') === 'screen') {
+      setIsScreenMode(true);
+    }
+  }, []);
+
+  // Obtener los archivos multimedia de Google Drive
+  const fetchScreenFiles = async () => {
+    if (!CONFIG.API_URL || CONFIG.API_URL === "TU_GOOGLE_APPS_SCRIPT_URL_AQUI") {
+      console.warn("La URL de Google Apps Script no está configurada.");
+      return;
+    }
+    try {
+      setIsFetchingScreen(true);
+      const res = await fetch(CONFIG.API_URL);
+      const data = await res.json();
+      if (data.status === "success" && data.files) {
+        setScreenFiles(data.files);
+      }
+    } catch (err) {
+      console.error("Error al obtener los archivos para la pantalla:", err);
+    } finally {
+      setIsFetchingScreen(false);
+    }
+  };
+
+  // Polling para actualizar los archivos en el muro cada 15 segundos
+  useEffect(() => {
+    if (!isScreenMode) return;
+    fetchScreenFiles();
+    const interval = setInterval(fetchScreenFiles, 15000);
+    return () => clearInterval(interval);
+  }, [isScreenMode]);
+
+  // Manejar la transición automática del carrusel (cada 6 segundos)
+  useEffect(() => {
+    if (!isScreenMode || screenFiles.length === 0 || isPlayingVideo) return;
+    
+    transitionTimerRef.current = setInterval(() => {
+      setActiveIdx(prev => (prev + 1) % screenFiles.length);
+    }, 6000);
+    
+    return () => {
+      if (transitionTimerRef.current) clearInterval(transitionTimerRef.current);
+    };
+  }, [isScreenMode, screenFiles, isPlayingVideo]);
+
+  // Funciones de control de reproducción de video en el carrusel
+  const handleVideoPlay = () => {
+    setIsPlayingVideo(true);
+    if (transitionTimerRef.current) {
+      clearInterval(transitionTimerRef.current);
+      transitionTimerRef.current = null;
+    }
+  };
+
+  const handleVideoEnded = () => {
+    setIsPlayingVideo(false);
+    setActiveIdx(prev => (prev + 1) % screenFiles.length);
+  };
+
+  // Helper para extraer el nombre del invitado de la descripción del archivo
+  const extractGuestName = (description) => {
+    if (!description) return "Anónimo";
+    const match = description.match(/invitado:\s*(.*)/i);
+    if (match && match[1]) {
+      return match[1].split("\n")[0].trim();
+    }
+    return "Anónimo";
+  };
+
+  const renderLiveWall = () => {
+    const uploadUrl = window.location.origin + window.location.pathname;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(uploadUrl)}`;
+
+    return (
+      <main className="min-h-screen bg-[#FAF8F5] text-slate-800 flex flex-col md:flex-row p-6 md:p-10 select-none overflow-hidden relative font-sans">
+        {/* Elementos Decorativos Flotantes */}
+        <div className="absolute top-12 left-8 text-5xl select-none pointer-events-none opacity-20 animate-sway">🪩</div>
+        <div className="absolute bottom-16 right-8 text-5xl select-none pointer-events-none opacity-20 animate-sway" style={{ animationDelay: '2s' }}>✨</div>
+        <div className="absolute top-1/4 right-10 text-4xl select-none pointer-events-none opacity-10 animate-sway" style={{ animationDelay: '3.5s' }}>💙</div>
+        <div className="absolute bottom-1/4 left-10 text-4xl select-none pointer-events-none opacity-15 animate-sway" style={{ animationDelay: '1s' }}>🎈</div>
+
+        {/* COLUMNA IZQUIERDA: Instrucciones y QR */}
+        <section className="w-full md:w-[35%] flex flex-col justify-between items-center bg-white/70 backdrop-blur-md rounded-3xl p-8 border border-slate-200/80 shadow-2xl relative overflow-hidden z-20 mb-6 md:mb-0 md:mr-6">
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-invitation-blue via-invitation-silver to-invitation-blueDark"></div>
+          
+          {/* Header */}
+          <div className="text-center w-full mt-4">
+            <div className="inline-block bg-invitation-blueLight/60 px-4 py-1.5 rounded-full border border-invitation-blue/30 mb-4">
+              <span className="text-xs font-bold tracking-widest uppercase text-invitation-blueDark">
+                MURO EN VIVO
+              </span>
+            </div>
+            <h1 className="font-handwritten text-4xl md:text-5xl font-bold text-invitation-charcoal mb-2">
+              {CONFIG.EVENT_NAME}
+            </h1>
+            <div className="flex items-center justify-center my-3 w-2/3 mx-auto">
+              <div className="h-[1px] bg-invitation-gray flex-1"></div>
+              <span className="mx-2 text-xs">🎀</span>
+              <div className="h-[1px] bg-invitation-gray flex-1"></div>
+            </div>
+          </div>
+
+          {/* QR e Instrucciones */}
+          <div className="flex flex-col items-center text-center my-6 space-y-5">
+            <div className="bg-[#FAF8F5] p-5 rounded-2xl border border-invitation-gray shadow-inner flex items-center justify-center relative group">
+              <img 
+                src={qrUrl} 
+                alt="QR de subida" 
+                className="w-48 h-48 md:w-56 md:h-56 object-contain rounded-lg shadow-sm"
+              />
+            </div>
+            <div className="space-y-2 max-w-[280px]">
+              <h2 className="text-lg font-bold text-invitation-charcoal">
+                📸 ¡Compartí tu foto o video!
+              </h2>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Escaneá el código QR con tu celular y subí tus recuerdos para que aparezcan en pantalla al instante.
+              </p>
+            </div>
+          </div>
+
+          {/* Contador / Footer */}
+          <div className="w-full text-center mb-2 space-y-1">
+            <div className="text-xs font-semibold text-slate-400">
+              Total: {screenFiles.length} {screenFiles.length === 1 ? 'recuerdo subido' : 'recuerdos subidos'}
+            </div>
+            <div className="text-[10px] text-slate-400 font-sans italic">
+              ¡A celebrar juntos! 💖
+            </div>
+          </div>
+        </section>
+
+        {/* COLUMNA DERECHA: Carrusel / Visor */}
+        <section className="flex-1 bg-white/70 backdrop-blur-md rounded-3xl p-6 border border-slate-200/80 shadow-2xl flex flex-col justify-center items-center relative overflow-hidden z-20 min-h-[400px]">
+          {screenFiles.length === 0 ? (
+            /* Estado vacío: Sin fotos aún */
+            <div className="text-center space-y-4 max-w-[320px] p-6 animate-pulse">
+              <div className="w-20 h-20 rounded-full bg-invitation-blueLight/50 flex items-center justify-center mx-auto shadow-blue-balloon">
+                <Camera className="w-10 h-10 text-invitation-blueDark" />
+              </div>
+              <h3 className="text-xl font-handwritten font-bold text-invitation-charcoal">
+                Esperando recuerdos...
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                ¡Escaneá el QR y sé el primero en subir una foto o video para inaugurar el muro de recuerdos!
+              </p>
+            </div>
+          ) : (
+            /* Carrusel con transiciones de desvanecimiento puro */
+            <div className="w-full h-full flex flex-col relative justify-between">
+              
+              {/* Contenedor de la Imagen/Video */}
+              <div className="flex-1 w-full relative flex items-center justify-center overflow-hidden rounded-2xl bg-black/5 min-h-[300px]">
+                {screenFiles.map((file, idx) => {
+                  const isActive = idx === activeIdx;
+                  const isVideo = file.mimeType.indexOf("video/") !== -1;
+                  
+                  return (
+                    <div 
+                      key={file.id}
+                      className={`absolute inset-0 flex items-center justify-center p-4 transition-all duration-1000 ease-in-out ${
+                        isActive ? 'opacity-100 scale-100 z-10' : 'opacity-0 scale-95 pointer-events-none z-0'
+                      }`}
+                    >
+                      <div className="bg-white p-4 pb-12 rounded-lg shadow-2xl border border-slate-100 max-h-full max-w-full flex flex-col justify-center polaroid-frame relative">
+                        <div className="max-h-[60vh] overflow-hidden rounded flex items-center justify-center bg-slate-50 border border-slate-100">
+                          {isActive && (
+                            isVideo ? (
+                              <video
+                                src={`https://drive.google.com/uc?export=download&id=${file.id}`}
+                                className="max-h-[60vh] max-w-full object-contain"
+                                autoPlay
+                                muted
+                                playsInline
+                                onPlay={handleVideoPlay}
+                                onEnded={handleVideoEnded}
+                                onError={(e) => {
+                                  console.error("Error al cargar video de Drive:", e);
+                                  setIsPlayingVideo(false);
+                                }}
+                              />
+                            ) : (
+                              <img 
+                                src={`https://lh3.googleusercontent.com/d/${file.id}=w1200`}
+                                alt={file.name}
+                                className="max-h-[60vh] max-w-full object-contain"
+                                onLoad={() => {
+                                  setIsPlayingVideo(false);
+                                }}
+                                onError={(e) => {
+                                  console.error("Error al cargar imagen de Drive:", e);
+                                }}
+                              />
+                            )
+                          )}
+                        </div>
+                        {/* Texto de firma Polaroid */}
+                        <div className="absolute bottom-2.5 left-0 right-0 text-center">
+                          <span className="font-handwritten text-xl md:text-2xl text-slate-600 block truncate px-4">
+                            📸 {extractGuestName(file.description)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Indicadores de diapositiva (Puntos discretos en la parte inferior) */}
+              <div className="h-6 flex items-center justify-center space-x-1.5 mt-2 z-20">
+                {screenFiles.map((_, idx) => (
+                  <button 
+                    key={idx}
+                    onClick={() => {
+                      setIsPlayingVideo(false);
+                      setActiveIdx(idx);
+                    }}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      idx === activeIdx ? 'w-5 bg-invitation-blueDark' : 'w-1.5 bg-slate-300 hover:bg-slate-400'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      </main>
+    );
+  };
+
   // Mensajes de carga dinámicos para mejorar la experiencia de usuario
   const loadingMessages = [
     'Preparando tus recuerdos...',
     'Procesando archivo...',
     'Comprimiendo un poco para Drive...',
     'Subiendo al álbum de recuerdos...',
-    'Guardando en la carpeta de Caro...',
+    'Guardando en la carpeta de Renata...',
     '¡Listo! Registrando tu carga...'
   ];
 
@@ -320,6 +563,10 @@ export default function App() {
     pointerEvents: 'none'
   };
 
+  if (isScreenMode) {
+    return renderLiveWall();
+  }
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-4 safe-padding-bottom">
       
@@ -345,15 +592,15 @@ export default function App() {
           
           <div className="flex flex-col items-center select-none mb-1">
             <span className="font-serif tracking-[0.25em] text-xs font-bold text-invitation-blueDark uppercase">
-              I'M TURNING
+              MIS 15
             </span>
-            <span className="text-4xl font-extrabold text-[#789BB9] drop-shadow-sm select-none font-serif py-1 tracking-wider">
-              21
+            <span className="text-4xl font-extrabold text-invitation-blueDark drop-shadow-sm select-none font-serif py-1 tracking-wider">
+              15
             </span>
           </div>
 
           <h1 className="font-handwritten text-4xl md:text-5xl font-bold text-invitation-charcoal mt-1">
-            ¡Cumple Caro!
+            ¡Mis 15 Renata!
           </h1>
           
           {/* Línea divisoria decorativa con un moño */}
@@ -610,7 +857,7 @@ export default function App() {
               ¡Guardados con éxito! 🎉
             </h3>
             <p className="text-xs text-slate-500 max-w-[260px] leading-relaxed mb-6 font-sans">
-              Muchas gracias {guestName ? <strong className="text-invitation-blueDark font-bold">{guestName}</strong> : 'amigo/a'} por capturar estos momentos. Ya están en la carpeta de Drive de Caro.
+              Muchas gracias {guestName ? <strong className="text-invitation-blueDark font-bold">{guestName}</strong> : 'amigo/a'} por capturar estos momentos. Ya están en la carpeta de Drive de Renata.
             </p>
 
             <button

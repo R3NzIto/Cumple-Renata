@@ -3,7 +3,7 @@
 // ==========================================
 
 // 1. Tu carpeta de Google Drive configurada:
-var FOLDER_ID = "https://drive.google.com/drive/folders/1XioTmhMIgs_yrrW03bXq5J5Ptx14rphj?usp=sharing";
+var FOLDER_ID = "143fCGD6IPnuQC2ux1epL0DjWlf0tDcCg";
 
 /**
  * Función principal que recibe y procesa las peticiones HTTP POST.
@@ -75,6 +75,68 @@ function doPost(e) {
     // Manejo de errores y respuesta con el detalle del fallo
     Logger.log("Error: " + err.toString());
     return errorResponse("Error en el servidor de Google: " + err.toString());
+  }
+}
+
+/**
+ * Función principal que recibe y procesa las peticiones HTTP GET.
+ * Devuelve un listado en formato JSON de todas las fotos y videos de la carpeta de Drive.
+ */
+function doGet(e) {
+  try {
+    // 1. Validar que se haya modificado el FOLDER_ID
+    if (!FOLDER_ID || FOLDER_ID.indexOf("REEMPLAZA_CON") !== -1 || FOLDER_ID.trim() === "") {
+      return errorResponse("Configuración incompleta: FOLDER_ID no configurado en Google Apps Script.");
+    }
+
+    // Limpieza automática del ID si se ingresó la URL completa
+    var cleanFolderId = FOLDER_ID.trim();
+    if (cleanFolderId.indexOf("drive.google.com") !== -1) {
+      var parts = cleanFolderId.split("/");
+      for (var i = 0; i < parts.length; i++) {
+        if (parts[i] === "folders" && i + 1 < parts.length) {
+          cleanFolderId = parts[i + 1].split("?")[0].split("#")[0];
+          break;
+        }
+      }
+    }
+
+    var folder = DriveApp.getFolderById(cleanFolderId);
+    var filesIter = folder.getFiles();
+    var filesList = [];
+    
+    while (filesIter.hasNext()) {
+      var file = filesIter.next();
+      var mime = file.getMimeType();
+      
+      // Filtrar para asegurarnos de enviar solo imágenes y videos
+      if (mime.indexOf("image/") !== -1 || mime.indexOf("video/") !== -1) {
+        filesList.push({
+          id: file.getId(),
+          name: file.getName(),
+          mimeType: mime,
+          description: file.getDescription() || "",
+          created: file.getDateCreated().getTime()
+        });
+      }
+    }
+
+    // Ordenar de más antiguos a más nuevos para la secuencia del carrusel
+    filesList.sort(function(a, b) {
+      return a.created - b.created;
+    });
+
+    var response = {
+      status: "success",
+      files: filesList
+    };
+
+    return ContentService.createTextOutput(JSON.stringify(response))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    Logger.log("Error en doGet: " + err.toString());
+    return errorResponse("Error al listar archivos de Google Drive: " + err.toString());
   }
 }
 
