@@ -222,8 +222,8 @@ export default function App() {
                           : 'opacity-0 scale-95 rotate-[-3deg] translate-y-8 pointer-events-none z-0'
                       }`}
                     >
-                      <div className="bg-white p-4 pb-20 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1),_0_0_20px_rgba(30,58,138,0.05)] border border-slate-200/60 max-h-full max-w-full flex flex-col justify-center polaroid-frame relative">
-                        <div className="max-h-[58vh] overflow-hidden rounded flex items-center justify-center bg-slate-50 border border-slate-100">
+                      <div className="bg-white p-4 pb-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1),_0_0_20px_rgba(30,58,138,0.05)] border border-slate-200/60 max-h-full max-w-full flex flex-col justify-between polaroid-frame relative">
+                        <div className="max-h-[58vh] overflow-hidden rounded flex items-center justify-center bg-slate-50 border border-slate-100 flex-1">
                           {isActive && (
                             <img 
                               src={`https://lh3.googleusercontent.com/d/${file.id}=w1200`}
@@ -238,12 +238,15 @@ export default function App() {
                             />
                           )}
                         </div>
-                        {/* Texto de firma Polaroid */}
-                        <div className="absolute bottom-5 left-0 right-0 text-center px-4 flex flex-col justify-center items-center">
-                          {extractMessage(file.description) && (
+                        {/* Texto de firma Polaroid (en flujo normal para evitar superposición física) */}
+                        <div className="mt-4 mb-2 text-center px-4 flex flex-col justify-center items-center min-h-[48px] w-full">
+                          {extractMessage(file.description) ? (
                             <p className="font-handwritten text-xl md:text-2xl text-slate-700 italic max-w-[90%] break-words leading-tight">
                               “{extractMessage(file.description)}”
                             </p>
+                          ) : (
+                            /* Espaciador para mantener el look de Polaroid si no hay mensaje */
+                            <div className="h-6"></div>
                           )}
                         </div>
                       </div>
