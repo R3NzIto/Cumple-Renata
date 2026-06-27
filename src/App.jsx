@@ -115,10 +115,10 @@ export default function App() {
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(uploadUrl)}`;
 
     return (
-      <main className="min-h-screen bg-gradient-to-br from-[#060A18] via-[#03050C] to-[#010204] text-slate-100 flex flex-col md:flex-row p-6 md:p-10 select-none overflow-hidden relative font-sans">
-        {/* Glows de fondo para profundidad minimalista */}
-        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-blue-900/10 blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full bg-slate-700/5 blur-[150px] pointer-events-none"></div>
+      <main className="min-h-screen bg-gradient-to-br from-[#F8FAFC] via-[#F1F5F9] to-[#E2E8F0] text-slate-800 flex flex-col md:flex-row p-6 md:p-10 select-none overflow-hidden relative font-sans">
+        {/* Glows de fondo suaves para profundidad minimalista en tema claro */}
+        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-blue-200/20 blur-[100px] pointer-events-none"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full bg-slate-300/20 blur-[120px] pointer-events-none"></div>
 
         {/* Elementos Decorativos Flotantes */}
         <div className="absolute top-12 left-8 text-5xl select-none pointer-events-none opacity-20 animate-sway">🪩</div>
@@ -126,30 +126,30 @@ export default function App() {
         <div className="absolute top-1/4 right-10 text-4xl select-none pointer-events-none opacity-10 animate-sway" style={{ animationDelay: '3.5s' }}>💙</div>
         <div className="absolute bottom-1/4 left-10 text-4xl select-none pointer-events-none opacity-15 animate-sway" style={{ animationDelay: '1s' }}>🎈</div>
 
-        {/* COLUMNA IZQUIERDA: Instrucciones y QR (Glassmorphism oscuro) */}
-        <section className="w-full md:w-[35%] flex flex-col justify-between items-center bg-[#0F172A]/40 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5),_inset_0_1px_1px_rgba(255,255,255,0.1)] relative overflow-hidden z-20 mb-6 md:mb-0 md:mr-6">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-900 via-slate-400 to-blue-950"></div>
+        {/* COLUMNA IZQUIERDA: Instrucciones y QR (Glassmorphism claro y suave) */}
+        <section className="w-full md:w-[35%] flex flex-col justify-between items-center bg-white/80 backdrop-blur-md rounded-3xl p-8 border border-slate-200/50 shadow-xl relative overflow-hidden z-20 mb-6 md:mb-0 md:mr-6">
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-invitation-blue via-invitation-silver to-invitation-blueDark"></div>
           
           {/* Header */}
           <div className="text-center w-full mt-4">
-            <div className="inline-block bg-blue-900/30 px-4 py-1.5 rounded-full border border-white/10 mb-4 shadow-sm">
-              <span className="text-xs font-bold tracking-widest uppercase text-blue-200">
+            <div className="inline-block bg-invitation-blueLight/60 px-4 py-1.5 rounded-full border border-invitation-blue/30 mb-4 shadow-sm">
+              <span className="text-xs font-bold tracking-widest uppercase text-invitation-blueDark">
                 MURO EN VIVO
               </span>
             </div>
-            <h1 className="font-handwritten text-4xl md:text-5xl font-bold text-white drop-shadow-[0_2px_10px_rgba(148,163,184,0.2)] mb-2">
+            <h1 className="font-handwritten text-4xl md:text-5xl font-bold text-invitation-charcoal mb-2">
               {CONFIG.EVENT_NAME}
             </h1>
             <div className="flex items-center justify-center my-3 w-2/3 mx-auto">
-              <div className="h-[1px] bg-white/10 flex-1"></div>
+              <div className="h-[1px] bg-slate-200 flex-1"></div>
               <span className="mx-2 text-xs text-slate-400">🎀</span>
-              <div className="h-[1px] bg-white/10 flex-1"></div>
+              <div className="h-[1px] bg-slate-200 flex-1"></div>
             </div>
           </div>
 
           {/* QR e Instrucciones */}
           <div className="flex flex-col items-center text-center my-6 space-y-5">
-            <div className="bg-slate-100 p-5 rounded-2xl border border-white/20 shadow-[0_15px_35px_rgba(0,0,0,0.4)] flex items-center justify-center transition-transform duration-300 hover:scale-[1.02]">
+            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/50 shadow-inner flex items-center justify-center transition-transform duration-300 hover:scale-[1.02]">
               <img 
                 src={qrUrl} 
                 alt="QR de subida" 
@@ -157,10 +157,10 @@ export default function App() {
               />
             </div>
             <div className="space-y-2 max-w-[280px]">
-              <h2 className="text-lg font-bold text-white">
+              <h2 className="text-lg font-bold text-invitation-charcoal">
                 📸 ¡Compartí tu foto!
               </h2>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-xs text-slate-500 leading-relaxed">
                 Escaneá el código QR con tu celular y subí tus fotos para que aparezcan en pantalla al instante.
               </p>
             </div>
@@ -168,24 +168,24 @@ export default function App() {
 
           {/* Contador / Footer */}
           <div className="w-full text-center mb-2 space-y-1">
-            <div className="text-xs font-semibold text-slate-300">
+            <div className="text-xs font-semibold text-slate-500">
               Total: {screenFiles.length} {screenFiles.length === 1 ? 'foto subida' : 'fotos subidas'}
             </div>
-            <div className="text-[10px] text-slate-500 font-sans italic">
+            <div className="text-[10px] text-slate-400 font-sans italic">
               ¡A celebrar junto a Renata! 💖
             </div>
           </div>
         </section>
 
-        {/* COLUMNA DERECHA: Carrusel / Visor (Glassmorphism oscuro) */}
-        <section className="flex-1 bg-[#0F172A]/20 backdrop-blur-xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-3xl p-6 flex flex-col justify-center items-center relative overflow-hidden z-20 min-h-[400px]">
+        {/* COLUMNA DERECHA: Carrusel / Visor (Glassmorphism claro y suave) */}
+        <section className="flex-1 bg-white/60 backdrop-blur-md rounded-3xl p-6 border border-slate-200/50 shadow-xl flex flex-col justify-center items-center relative overflow-hidden z-20 min-h-[400px]">
           {screenFiles.length === 0 ? (
             /* Estado vacío: Sin fotos aún */
-            <div className="text-center space-y-4 max-w-[320px] p-6">
-              <div className="w-20 h-20 rounded-full bg-blue-900/30 border border-blue-800/20 flex items-center justify-center mx-auto shadow-[0_8px_32px_rgba(30,58,138,0.3)] animate-pulse">
-                <Camera className="w-10 h-10 text-blue-300" />
+            <div className="text-center space-y-4 max-w-[320px] p-6 animate-pulse">
+              <div className="w-20 h-20 rounded-full bg-invitation-blueLight/50 flex items-center justify-center mx-auto shadow-blue-balloon">
+                <Camera className="w-10 h-10 text-invitation-blueDark" />
               </div>
-              <h3 className="text-xl font-handwritten font-bold text-white">
+              <h3 className="text-xl font-handwritten font-bold text-invitation-charcoal">
                 Esperando fotos...
               </h3>
               <p className="text-xs text-slate-400 leading-relaxed">
@@ -197,7 +197,7 @@ export default function App() {
             <div className="w-full h-full flex flex-col relative justify-between">
               
               {/* Contenedor de la Imagen */}
-              <div className="flex-1 w-full relative flex items-center justify-center overflow-hidden rounded-2xl bg-black/20 min-h-[300px]">
+              <div className="flex-1 w-full relative flex items-center justify-center overflow-hidden rounded-2xl bg-slate-100/50 min-h-[300px]">
                 {screenFiles.map((file, idx) => {
                   const isActive = idx === activeIdx;
                   
@@ -210,7 +210,7 @@ export default function App() {
                           : 'opacity-0 scale-95 rotate-[-3deg] translate-y-8 pointer-events-none z-0'
                       }`}
                     >
-                      <div className="bg-[#FFFFFF]/95 p-4 pb-14 rounded-2xl shadow-[0_30px_70px_rgba(0,0,0,0.85),_0_0_50px_rgba(30,58,138,0.25)] border border-white/10 max-h-full max-w-full flex flex-col justify-center polaroid-frame relative">
+                      <div className="bg-white p-4 pb-14 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1),_0_0_20px_rgba(30,58,138,0.05)] border border-slate-200/60 max-h-full max-w-full flex flex-col justify-center polaroid-frame relative">
                         <div className="max-h-[58vh] overflow-hidden rounded flex items-center justify-center bg-slate-50 border border-slate-100">
                           {isActive && (
                             <img 
@@ -238,7 +238,7 @@ export default function App() {
                 })}
               </div>
 
-              {/* Indicadores de diapositiva (Puntos elegantes estilo Dark Mode) */}
+              {/* Indicadores de diapositiva */}
               <div className="h-6 flex items-center justify-center space-x-2 mt-3 z-20">
                 {screenFiles.map((_, idx) => (
                   <button 
@@ -249,8 +249,8 @@ export default function App() {
                     }}
                     className={`h-1.5 rounded-full transition-all duration-500 ${
                       idx === activeIdx 
-                        ? 'w-6 bg-slate-200 shadow-[0_0_8px_rgba(255,255,255,0.7)]' 
-                        : 'w-1.5 bg-slate-600 hover:bg-slate-500'
+                        ? 'w-6 bg-invitation-blueDark shadow-sm' 
+                        : 'w-1.5 bg-slate-300 hover:bg-slate-400'
                     }`}
                   />
                 ))}
